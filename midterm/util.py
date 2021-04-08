@@ -47,56 +47,54 @@ def get_block_stat(block_cid):
     return requests.post(block_stat_api, params={"arg": block_cid}).json()
 
 
-def get_ips_from_ids(peers):
+def get_peers_info(peers):
     values = []
     for peer in peers:
         
-        ips = set()
-        req = requests.post(id_api, params={"arg": peer.split("/")[-1]}).json()
+        req = requests.post(id_api, params={"arg": peer}).json()
 
         if "Addresses" in req:
+            unique_ips = set()
+            ips = []
             for addr in req["Addresses"]:
                 splitted_addr = addr.split("/")
                 # Considering only ip4 addresses
-                if splitted_addr[1] == "ip4" and re.search("(^127\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)", splitted_addr[2]) is None:
-                    ips.add(splitted_addr[2])
-        values.append(
-            {
-                "ID": peer,
-                "IPs_info": [
-                    {
-                        "IP": ip
-                    } for ip in ips
-                ]
-            }
-        )
+                ip = splitted_addr[2]
+                regex = "(^127\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)"
+                if splitted_addr[1] == "ip4" and re.search(regex, ip) is None and ip not in unique_ips:
+                    unique_ips.add(ip)
+                    req = requests.get(f"{ip_api2}/{ip}/json/")
+
+                    sc = req.status_code
+
+                    if sc == 200:
+                        req = req.json()
+                        
+                        ips.append({
+                            "IP": ip,
+                            "Country": req["country_name"],
+                            "Region": req["region"],
+                            "City": req["city"],
+                            "Country_code": req["country_code"].lower()
+                        })
+            values.append(
+                {
+                    "ID": peer,
+                    "IPs_info": list(ips)
+                }
+            )
 
     return values
 
 
 def get_swarm_ips():
-    req = requests.post(swarm_peers_api).json()
+    swarm_addresses = requests.post(swarm_peers_api).json()
+    ids = []
 
-    addresses = [peer["Addr"].split("/")[2] for peer in req["Peers"]]
+    for peer in swarm_addresses:
+        ids.append(peer.split("/")[-1])
 
-    return addresses
-
-
-def get_peers_locations(peers):
-    for peer in peers:
-        for ip in peer["IPs_info"]:
-            req = requests.get(f"{ip_api2}/{ip}/json/")
-
-            sc = req.status_code
-
-            if sc == 200:
-                req = req.json()
-                ip["Country"] = req["country"]
-                ip["Region"] = req["region"]
-                ip["City"] = req["city"]
-                ip["Country_code"] = req["country_code"]
-
-    return peers
+    return ids
 
 
 def get_numb_country_codes(peers):
@@ -114,7 +112,13 @@ def get_numb_country_codes(peers):
 
 
 def get_bootstrap_nodes():
-    return requests.post(bootstrap_list_api).json()
+    boots_addresses = requests.post(bootstrap_list_api).json()["Peers"]
+    ids = set()
+
+    for boot in boots_addresses:
+        ids.add(boot.split("/")[-1])
+
+    return list(ids)
 
 
 def get_dag_stat(cid):

@@ -7,6 +7,8 @@ import pygal
 import logging
 import sys
 
+import matplotlib.pyplot as plt
+
 from pygal_maps_world.maps import World
 from pathlib import Path
 
@@ -36,30 +38,19 @@ def plot_map(name, countries):
     worldmap_chart.title = name
     worldmap_chart.add(name, countries)
     worldmap_chart.render_to_file(f"./plots/{name}.svg")
-    worldmap_chart.render_to_png(f"./plots/{name}.png")
+    #worldmap_chart.render_to_png(f"./plots/{name}.png")
 
 
-def generate_table(row_headers, values):
+def generate_table(row_headers, col_headers, values):
     line_chart = pygal.Bar()
     line_chart.title = "Peers statistics"
-    print(len(row_headers))
-    line_chart.x_labels = row_headers
+    row_labels = row_headers
+    col_labels = col_headers
 
-    """ for key, value in values.items():
-        pp.pprint("chiave: " + key)
-        pp.pprint(value)
-        line_chart.add(key, value) """
-    print(len(values["Country"]))
-    print(len(values["Region"]))
-    print(len(values["City"]))
-    values["Country"] = [str(x) for x in values["Country"]]
-    values["Region"] = [str(x) for x in values["Region"]]
-    values["City"] = [str(x) for x in values["City"]]
-    line_chart.add("Country", values["Country"])
-    line_chart.add("Region", values["Region"])
-    line_chart.add("City", values["City"])
-    line_chart.value_formatter = lambda x: '%d' % x if type(x) is int else "0"
-    return line_chart.render_table(style=True)
+    table = plt.table(cellText=values, rowLabels=row_labels, colLabels=col_labels, loc="center")
+    plt.axis("off")
+    plt.grid(False)
+    plt.savefig('foo.png')
 
 
 def main():
@@ -148,33 +139,37 @@ def main():
         table.write(nodes_html) """
 
     # get bootstrap nodes and locations, then generate map and table
-    boots = util.get_bootstrap_nodes()["Peers"]
+    boots = util.get_bootstrap_nodes()
     logging.debug(f"[Bootstrap nodes] {boots}")
 
-    ips = util.get_ips_from_ids(boots)
-    logging.debug(f"[Bootstrap nodes IP addresses] {ips}")
-
-    boots_locations = util.get_peers_locations(ips)
-    logging.debug(f"[Bootstrap nodes locations] {boots_locations}")
+    boots_infos = util.get_peers_info(boots)
+    logging.debug(f"[Bootstrap nodes infos] {boots_infos}")
 
     logging.info("Plotting bootstrap nodes map")
-    ccs = util.get_numb_country_codes(boots_locations)
+    ccs = util.get_numb_country_codes(boots_infos)
     plot_map("Bootstrap nodes", ccs)
 
-    """ logging.info("Generating bootstrap nodes table")
+    logging.info("Generating bootstrap nodes table")
+    values = []
+    for boot in boots_infos:
+        ip_value = []
+        for ip in boot["IPs_info"]:
+            ip_value.append(boot["ID"])
+            ip_value.append(ip["IP"])
+            ip_value.append(ip["Country"])
+            ip_value.append(ip["Country_code"])
+            ip_value.append(ip["Region"])
+            ip_value.append(ip["City"])
+        values.append(ip_value)
+
     bootstrap_html = generate_table(
         boots,
-        {
-            "Country": boots_locations["countries"],
-            "Region": boots_locations["regions"],
-            "City": boots_locations["cities"],
-        },
-    ) """
+        boots_infos[0]["IPs_info"][0].keys(),
+        values
+    )
 
-    with open("./plots/Bootstrap nodes.html", "w") as table:
-        table.write(bootstrap_html)
-
-    """ # get swarm peers and locations, then generate map
+    """
+    # get swarm peers and locations, then generate map
     ips = util.get_swarm_ips()
     logging.debug(f"[Swarm nodes IP addresses] {ips}")
 
@@ -192,13 +187,13 @@ def main():
             "Region": swarm_locations["regions"],
             "City": swarm_locations["cities"],
         },
-    ) """
+    ) 
 
     with open("./plots/Swarm nodes.html", "w") as table:
         table.write(swarm_html)
 
     logging.info(f"Garbage collection: {util.execute_gc()}")
-    logging.info(f"Shutdown: {util.shutdown()}")
+    logging.info(f"Shutdown: {util.shutdown()}")"""
 
 
 if __name__ == "__main__":
