@@ -48,9 +48,10 @@ def get_block_stat(block_cid):
 
 
 def get_ips_from_ids(peers):
-    ips = set()
+    values = []
     for peer in peers:
-
+        
+        ips = set()
         req = requests.post(id_api, params={"arg": peer.split("/")[-1]}).json()
 
         if "Addresses" in req:
@@ -59,8 +60,18 @@ def get_ips_from_ids(peers):
                 # Considering only ip4 addresses
                 if splitted_addr[1] == "ip4" and re.search("(^127\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)", splitted_addr[2]) is None:
                     ips.add(splitted_addr[2])
+        values.append(
+            {
+                "ID": peer,
+                "IPs_info": [
+                    {
+                        "IP": ip
+                    } for ip in ips
+                ]
+            }
+        )
 
-    return ips
+    return values
 
 
 def get_swarm_ips():
@@ -71,38 +82,35 @@ def get_swarm_ips():
     return addresses
 
 
-def get_peers_locations(ips):
-    countries = []
-    regions = []
-    cities = []
-    country_codes = []
-    cc_num_peers = {}
+def get_peers_locations(peers):
+    for peer in peers:
+        for ip in peer["IPs_info"]:
+            req = requests.get(f"{ip_api2}/{ip}/json/")
 
-    for ip in ips:
-        req = requests.get(f"{ip_api2}/{ip}/json/")
+            sc = req.status_code
 
-        sc = req.status_code
+            if sc == 200:
+                req = req.json()
+                ip["Country"] = req["country"]
+                ip["Region"] = req["region"]
+                ip["City"] = req["city"]
+                ip["Country_code"] = req["country_code"]
 
-        if sc == 200:
-            req = req.json()
-            countries.append(req["country_name"])
-            regions.append(req["region"])
-            cities.append(req["country_name"])
+    return peers
 
-            cc = req["country_code"].lower()
-            country_codes.append(cc)
-            if cc in cc_num_peers:
-                cc_num_peers[cc] += 1
+
+def get_numb_country_codes(peers):
+    ccs = {}
+    for peer in peers:
+        for ip in peer["IPs_info"]:
+            print(ip)
+            cc = ip["Country_code"]
+            if cc in ccs:
+                ccs[cc] += 1
             else:
-                cc_num_peers[cc] = 1
+                ccs[cc] = 1
 
-    return {
-        "countries": countries,
-        "regions": regions,
-        "cities": cities,
-        "country_codes": country_codes,
-        "cc_num_peers": cc_num_peers,
-    }
+    return ccs
 
 
 def get_bootstrap_nodes():

@@ -42,13 +42,23 @@ def plot_map(name, countries):
 def generate_table(row_headers, values):
     line_chart = pygal.Bar()
     line_chart.title = "Peers statistics"
+    print(len(row_headers))
     line_chart.x_labels = row_headers
 
-    pp.pprint(values)
-    for key, value in values.items():
-        if key != "Bytes" and key != "Blocks":
-            line_chart.add(key, value)
-    line_chart.value_formatter = lambda x: '%d' % x
+    """ for key, value in values.items():
+        pp.pprint("chiave: " + key)
+        pp.pprint(value)
+        line_chart.add(key, value) """
+    print(len(values["Country"]))
+    print(len(values["Region"]))
+    print(len(values["City"]))
+    values["Country"] = [str(x) for x in values["Country"]]
+    values["Region"] = [str(x) for x in values["Region"]]
+    values["City"] = [str(x) for x in values["City"]]
+    line_chart.add("Country", values["Country"])
+    line_chart.add("Region", values["Region"])
+    line_chart.add("City", values["City"])
+    line_chart.value_formatter = lambda x: '%d' % x if type(x) is int else "0"
     return line_chart.render_table(style=True)
 
 
@@ -96,7 +106,7 @@ def main():
     old_files_dag = util.get_dag_stat(old_files)
     logging.debug(f"[OldFiles DAG] {old_files_dag}")
 
-    # get bitswap stats
+    """ # get bitswap stats
     peers = util.get_bitswap_stat()
 
     filtered_peers = list(filter(lambda x: x["Recv"] > 0, peers))
@@ -135,7 +145,7 @@ def main():
     )
 
     with open("./plots/Peers that exchanged with this node.html", "w") as table:
-        table.write(nodes_html)
+        table.write(nodes_html) """
 
     # get bootstrap nodes and locations, then generate map and table
     boots = util.get_bootstrap_nodes()["Peers"]
@@ -145,25 +155,26 @@ def main():
     logging.debug(f"[Bootstrap nodes IP addresses] {ips}")
 
     boots_locations = util.get_peers_locations(ips)
-    logging.debug(f"[Bootstrap nodes locations] {peers_locations}")
+    logging.debug(f"[Bootstrap nodes locations] {boots_locations}")
 
     logging.info("Plotting bootstrap nodes map")
-    plot_map("Bootstrap nodes", boots_locations["cc_num_peers"])
+    ccs = util.get_numb_country_codes(boots_locations)
+    plot_map("Bootstrap nodes", ccs)
 
-    logging.info("Generating bootstrap nodes table")
+    """ logging.info("Generating bootstrap nodes table")
     bootstrap_html = generate_table(
-        peers_names,
+        boots,
         {
             "Country": boots_locations["countries"],
             "Region": boots_locations["regions"],
             "City": boots_locations["cities"],
         },
-    )
+    ) """
 
     with open("./plots/Bootstrap nodes.html", "w") as table:
         table.write(bootstrap_html)
 
-    # get swarm peers and locations, then generate map
+    """ # get swarm peers and locations, then generate map
     ips = util.get_swarm_ips()
     logging.debug(f"[Swarm nodes IP addresses] {ips}")
 
@@ -177,11 +188,11 @@ def main():
     swarm_html = generate_table(
         peers_names,
         {
-            "Country": boots_locations["countries"],
-            "Region": boots_locations["regions"],
-            "City": boots_locations["cities"],
+            "Country": swarm_locations["countries"],
+            "Region": swarm_locations["regions"],
+            "City": swarm_locations["cities"],
         },
-    )
+    ) """
 
     with open("./plots/Swarm nodes.html", "w") as table:
         table.write(swarm_html)
