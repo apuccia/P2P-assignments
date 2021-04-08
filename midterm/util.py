@@ -22,8 +22,7 @@ def get_my_id():
 
 
 def get_bitswap_stat():
-    req = requests.post(bitswap_stat_api, params={
-        "human": "true", "verbose": "true"})
+    req = requests.post(bitswap_stat_api, params={"human": "true", "verbose": "true"})
     resp = req.json()
 
     peers = []
@@ -42,16 +41,14 @@ def get_current_wantlist(peer_id):
 
 
 def get_block_stat(block_cid):
-    return requests.post(
-        block_stat_api, params={"arg": block_cid}).json()
+    return requests.post(block_stat_api, params={"arg": block_cid}).json()
 
 
 def get_ips_from_ids(peers):
     ips = set()
     for peer in peers:
 
-        req = requests.post(
-            id_api, params={"arg": peer.split("/")[-1]}).json()
+        req = requests.post(id_api, params={"arg": peer.split("/")[-1]}).json()
 
         if "Addresses" in req:
             splitted = [addr.split("/")[2] for addr in req["Addresses"]]
@@ -80,8 +77,7 @@ def get_peers_locations(ips):
     cc_num_peers = {}
 
     for ip in ips:
-        req = requests.get(
-            f"{ip_api2}/{ip}/json/").json()
+        req = requests.get(f"{ip_api2}/{ip}/json/").json()
 
         countries.append(req["country_name"])
         regions.append(req["region"])
@@ -99,7 +95,7 @@ def get_peers_locations(ips):
         "regions": regions,
         "cities": cities,
         "country_codes": country_codes,
-        "cc_num_peers": cc_num_peers
+        "cc_num_peers": cc_num_peers,
     }
 
 
@@ -108,8 +104,7 @@ def get_bootstrap_nodes():
 
 
 def get_dag_stat(cid):
-    return requests.post(
-        dag_stat_api, params={"arg": cid, "progress": "false"}).json()
+    return requests.post(dag_stat_api, params={"arg": cid, "progress": "false"}).json()
 
 
 def execute_gc():

@@ -1,4 +1,3 @@
-import requests
 import pprint as pp
 import time
 import os
@@ -29,7 +28,7 @@ def plot_map(name, countries):
 
 def generate_table(row_headers, country_names, regions, cities, num_bytes, blocks):
     line_chart = pygal.Bar()
-    line_chart.title = 'Peers statistics'
+    line_chart.title = "Peers statistics"
     line_chart.x_labels = row_headers
 
     line_chart.add("Country name", country_names)
@@ -53,8 +52,15 @@ def main():
     print(f"My id: {my_id}")
 
     # start downloading some files
-    sub_procs = [subprocess.Popen(f"ipfs get {file} -o D:\\prova", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                 for file in files_to_get]
+    sub_procs = [
+        subprocess.Popen(
+            f"ipfs get {file} -o D:\\prova",
+            shell=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        for file in files_to_get
+    ]
 
     for proc in sub_procs:
         while proc.poll() is None:
@@ -63,8 +69,7 @@ def main():
 
             for block in curr_wantlist:
                 block_size = util.get_block_stat(block["/"])["Size"]
-                print(
-                    f"Block Cid: {block['/']}, Block size:  {block_size}")
+                print(f"Block Cid: {block['/']}, Block size:  {block_size}")
             time.sleep(5)
 
     # get dag infos
@@ -84,10 +89,8 @@ def main():
     peers_bytes = [peer["Recv"] for peer in filtered_peers]
     peers_blocks = [peer["Exchanged"] for peer in filtered_peers]
 
-    plot_pie_chart("Content received in bytes",
-                   zip(peers_names, peers_bytes))
-    plot_pie_chart("Content received in blocks",
-                   zip(peers_names, peers_blocks))
+    plot_pie_chart("Content received in bytes", zip(peers_names, peers_bytes))
+    plot_pie_chart("Content received in blocks", zip(peers_names, peers_blocks))
 
     # show on map the peers from which we downloaded something
     ips = util.get_ips_from_ids(peers_names)
@@ -96,7 +99,13 @@ def main():
     print(locations["cc_num_peers"])
     plot_map("Peer nodes", locations["cc_num_peers"])
     html = generate_table(
-        peers_names, locations["countries"], locations["regions"], locations["cities"], peers_bytes, peers_blocks)
+        peers_names,
+        locations["countries"],
+        locations["regions"],
+        locations["cities"],
+        peers_bytes,
+        peers_blocks,
+    )
 
     with open("./plots/table.html", "w") as table:
         table.write(html)
