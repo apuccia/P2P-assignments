@@ -3,8 +3,10 @@ import time
 import os
 import subprocess
 import math
-from pygal_maps_world.maps import World
 import pygal
+
+from pygal_maps_world.maps import World
+from pathlib import Path
 
 import util
 
@@ -46,9 +48,11 @@ def main():
     old_files = "QmbsZEvJE8EU51HCUHQg2aem9JNFmFHdva3tGVYutdCXHp"
 
     files_to_get = [old_files]
+    Path("/plots").mkdir(parents=True, exist_ok=True)
 
     # start daemon
     subprocess.Popen("ipfs daemon --init", shell=True)
+    # time.sleep(2)
 
     # get node id
     my_id = util.get_my_id()["ID"]
@@ -113,6 +117,7 @@ def main():
     boots = util.get_bootstrap_nodes()["Peers"]
     print(f"Bootstrap nodes: {len(boots)}")
     ips = util.get_ips_from_ids(boots)
+    pp.pprint(ips)
     boots_locations = util.get_peers_locations(ips)
     pp.pprint(boots_locations)
     plot_map("Bootstrap nodes", boots_locations["cc_num_peers"])
@@ -120,6 +125,7 @@ def main():
     # get swarm peers and locations, then generate map
     ips = util.get_swarm_ips()
     print(f"Swarm nodes: {len(ips)}")
+    pp.pprint(ips)
     swarm_locations = util.get_peers_locations(ips)
     pp.pprint(swarm_locations)
     plot_map("Swarm nodes", swarm_locations["cc_num_peers"])
