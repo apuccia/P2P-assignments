@@ -47,30 +47,29 @@ def main():
 
     files_to_get = [old_files]
 
+    # start daemon
+    subprocess.run("ipfs daemon --init")
+
     # get node id
     my_id = util.get_my_id()["ID"]
     print(f"My id: {my_id}")
 
     # start downloading some files
-    sub_procs = [
-        subprocess.Popen(
-            f"ipfs get {file} -o D:\\prova",
-            shell=True,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-        for file in files_to_get
-    ]
+    proc = subprocess.Popen(
+        f"ipfs get {file} -o D:\\prova",
+        shell=True,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
 
-    for proc in sub_procs:
-        while proc.poll() is None:
-            print("---- WANTLIST (every 5 sec) ----")
-            curr_wantlist = util.get_current_wantlist(my_id)
+    while proc.poll() is None:
+        print("---- WANTLIST (every 5 sec) ----")
+        curr_wantlist = util.get_current_wantlist(my_id)
 
-            for block in curr_wantlist:
-                block_size = util.get_block_stat(block["/"])["Size"]
-                print(f"Block Cid: {block['/']}, Block size:  {block_size}")
-            time.sleep(5)
+        for block in curr_wantlist:
+            block_size = util.get_block_stat(block["/"])["Size"]
+            print(f"Block Cid: {block['/']}, Block size:  {block_size}")
+        time.sleep(5)
 
     # get dag infos
     old_files_dag = util.get_dag_stat(old_files)
