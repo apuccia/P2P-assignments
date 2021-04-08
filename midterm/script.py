@@ -5,6 +5,7 @@ import subprocess
 import math
 import pygal
 import logging
+import sys
 
 from pygal_maps_world.maps import World
 from pathlib import Path
@@ -38,16 +39,16 @@ def plot_map(name, countries):
     worldmap_chart.render_to_png(f"./plots/{name}.png")
 
 
-def generate_table(row_headers, pairs):
+def generate_table(row_headers, values):
     line_chart = pygal.Bar()
     line_chart.title = "Peers statistics"
     line_chart.x_labels = row_headers
 
-    for key, value in pairs:
-        line_chart.add(key, value)
-
-    line_chart.value_formatter = lambda x: str(x)
-
+    pp.pprint(values)
+    for key, value in values.items():
+        if key != "Bytes" and key != "Blocks":
+            line_chart.add(key, value)
+    line_chart.value_formatter = lambda x: '%d' % x
     return line_chart.render_table(style=True)
 
 
@@ -56,7 +57,7 @@ def main():
     old_files = "QmbsZEvJE8EU51HCUHQg2aem9JNFmFHdva3tGVYutdCXHp"
 
     files_to_get = [old_files]
-    Path("/plots").mkdir(parents=True, exist_ok=True)
+    Path("plots").mkdir(parents=True, exist_ok=True)
     logging.info("Plot directory created")
 
     # start daemon
@@ -190,5 +191,7 @@ def main():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(filename="info.log", encoding="utf-8", level=logging.INFO)
+    logging.basicConfig(filename="info.log", level=logging.DEBUG)
+    logging.StreamHandler(sys.stdout)
+
     main()

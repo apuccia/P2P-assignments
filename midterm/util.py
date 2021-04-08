@@ -57,7 +57,7 @@ def get_ips_from_ids(peers):
             for addr in req["Addresses"]:
                 splitted_addr = addr.split("/")
                 # Considering only ip4 addresses
-                if splitted_addr[1] == "ip4" and re.search("(^127\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)" is None:
+                if splitted_addr[1] == "ip4" and re.search("(^127\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)", splitted_addr[2]) is None:
                     ips.add(splitted_addr[2])
 
     return ips
@@ -79,18 +79,22 @@ def get_peers_locations(ips):
     cc_num_peers = {}
 
     for ip in ips:
-        req = requests.get(f"{ip_api2}/{ip}/json/").json()
+        req = requests.get(f"{ip_api2}/{ip}/json/")
 
-        countries.append(req["country_name"])
-        regions.append(req["region"])
-        cities.append(req["country_name"])
+        sc = req.status_code
 
-        cc = req["country_code"].lower()
-        country_codes.append(cc)
-        if cc in cc_num_peers:
-            cc_num_peers[cc] += 1
-        else:
-            cc_num_peers[cc] = 1
+        if sc == 200:
+            req = req.json()
+            countries.append(req["country_name"])
+            regions.append(req["region"])
+            cities.append(req["country_name"])
+
+            cc = req["country_code"].lower()
+            country_codes.append(cc)
+            if cc in cc_num_peers:
+                cc_num_peers[cc] += 1
+            else:
+                cc_num_peers[cc] = 1
 
     return {
         "countries": countries,
