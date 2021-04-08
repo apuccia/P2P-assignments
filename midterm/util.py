@@ -1,4 +1,6 @@
 import requests
+import re
+import logging
 
 # base_api endpoint
 base_api = "http://localhost:5001/api/v0/"
@@ -52,12 +54,11 @@ def get_ips_from_ids(peers):
         req = requests.post(id_api, params={"arg": peer.split("/")[-1]}).json()
 
         if "Addresses" in req:
-            splitted = [addr.split("/")[2] for addr in req["Addresses"]]
-
-            for ip in splitted:
-                if ip not in ["127.0.0.1", "::1", "bootstrap.libp2p.io"]:
-                    ips.add(ip)
-                    break
+            for addr in req["Addresses"]:
+                splitted_addr = addr.split("/")
+                # Considering only ip4 addresses
+                if splitted_addr[1] == "ip4" and re.search("(^127\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)" is None:
+                    ips.add(splitted_addr[2])
 
     return ips
 
@@ -109,8 +110,10 @@ def get_dag_stat(cid):
 
 
 def execute_gc():
-    return requests.post(gc_api).status_code
+    sc = requests.post(gc_api).status_code
+    return sc
 
 
 def shutdown():
-    return requests.post(shutdown_api).status_code
+    sc = requests.post(shutdown_api).status_code
+    return sc
