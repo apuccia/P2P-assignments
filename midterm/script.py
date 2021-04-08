@@ -101,7 +101,7 @@ def main():
     with open("./plots/table.html", "w") as table:
         table.write(html)
 
-    """ # get bootstrap nodes and locations, then generate map
+    # get bootstrap nodes and locations, then generate map
     boots = util.get_bootstrap_nodes()["Peers"]
     print(f"Bootstrap nodes: {len(boots)}")
     ips = util.get_ips_from_ids(boots)
@@ -114,7 +114,7 @@ def main():
     print(f"Swarm nodes: {len(ips)}")
     swarm_locations = util.get_peers_locations(ips)
     pp.pprint(swarm_locations)
-    plot_map("Swarm nodes", swarm_locations["cc_num_peers"]) """
+    plot_map("Swarm nodes", swarm_locations["cc_num_peers"])
 
     print(util.execute_gc())
 
