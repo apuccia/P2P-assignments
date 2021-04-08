@@ -10,6 +10,7 @@ ledger_api = base_api + "bitswap/ledger"
 swarm_peers_api = base_api + "swarm/peers"
 bootstrap_list_api = base_api + "bootstrap/list"
 wantlist_api = base_api + "bitswap/wantlist"
+shutdown_api = base_api + "shutdown"
 
 id_api = base_api + "id"
 gc_api = base_api + "repo/gc"
@@ -109,3 +110,7 @@ def get_dag_stat(cid):
 
 def execute_gc():
     return requests.post(gc_api).status_code
+
+
+def shutdown():
+    return requests.post(shutdown_api).status_code

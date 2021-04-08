@@ -48,7 +48,7 @@ def main():
     files_to_get = [old_files]
 
     # start daemon
-    subprocess.run("ipfs daemon --init")
+    subprocess.Popen("ipfs daemon --init", shell=True)
 
     # get node id
     my_id = util.get_my_id()["ID"]
@@ -56,7 +56,7 @@ def main():
 
     # start downloading some files
     proc = subprocess.Popen(
-        f"ipfs get {file} -o D:\\prova",
+        f"ipfs get {old_files} -o D:\\prova",
         shell=True,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
@@ -124,7 +124,8 @@ def main():
     pp.pprint(swarm_locations)
     plot_map("Swarm nodes", swarm_locations["cc_num_peers"])
 
-    print(util.execute_gc())
+    print(f"Garbage collection: {util.execute_gc()}")
+    print(f"Shutdown: {util.shutdown()}")
 
 
 if __name__ == "__main__":
