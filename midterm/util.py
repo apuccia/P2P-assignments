@@ -9,7 +9,7 @@ bitswap_stat_api = base_api + "bitswap/stat"
 dag_stat_api = base_api + "dag/stat"
 block_stat_api = base_api + "block/stat"
 ledger_api = base_api + "bitswap/ledger"
-swarm_peers_api = base_api + "swarm/peers"
+swarm_peers_api = base_api + "swarm/addrs"
 bootstrap_list_api = base_api + "bootstrap/list"
 wantlist_api = base_api + "bitswap/wantlist"
 shutdown_api = base_api + "shutdown"
@@ -60,7 +60,7 @@ def get_peers_info(peers):
                 splitted_addr = addr.split("/")
                 # Considering only ip4 addresses
                 ip = splitted_addr[2]
-                regex = "(^127\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)"
+                regex = "(^127\\.)|(^10\\.)|(^172\\.1[6-9]\\.)|(^172\\.2[0-9]\\.)|(^172\\.3[0-1]\\.)|(^192\\.168\\.)"
                 if splitted_addr[1] == "ip4" and re.search(regex, ip) is None and ip not in unique_ips:
                     unique_ips.add(ip)
                     req = requests.get(f"{ip_api2}/{ip}/json/")
@@ -87,11 +87,14 @@ def get_peers_info(peers):
     return values
 
 
-def get_swarm_ips():
+def get_swarm_ids():
     swarm_addresses = requests.post(swarm_peers_api).json()
     ids = []
 
-    for peer in swarm_addresses:
+    thresh = 10
+    for peer in swarm_addresses["Addrs"]:
+        if thresh == 0:
+            break
         ids.append(peer.split("/")[-1])
 
     return ids
