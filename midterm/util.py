@@ -96,6 +96,7 @@ def get_swarm_ids():
         if thresh == 0:
             break
         ids.append(peer.split("/")[-1])
+        thresh -= 1
 
     return ids
 
