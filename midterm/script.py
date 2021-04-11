@@ -9,20 +9,55 @@ import sys
 
 import matplotlib.pyplot as plt
 
+from datetime import datetime
 from pygal_maps_world.maps import World
 from pathlib import Path
 
 import util
 
+# create logger
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
-def plot_bar_chart(name, peer_names, value_name, blocks, save_path):
-    line_chart = pygal.Bar(x_label_rotation=90)
+ch = logging.StreamHandler(sys.stdout)
+fh = logging.FileHandler("info.log")
+ch.setLevel(logging.DEBUG)
+fh.setLevel(logging.DEBUG)
+
+# create formatter
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+# add formatter to ch
+ch.setFormatter(formatter)
+fh.setFormatter(formatter)
+
+# add ch to logger
+logger.addHandler(ch)
+logger.addHandler(fh)
+
+
+def plot_line_chart(name, timestamps, value_names, values, save_path):
+    line_chart = pygal.Line(x_label_rotation=45)
     line_chart.title = name
-    line_chart.x_labels = peer_names
+    line_chart.x_labels = timestamps
+    chart.x_labels_major = timestamps[::20]
+    for value_name in value_names:
+        line_chart.add(value_name, values[value_name])
 
-    line_chart.add(value_name, blocks)
+    line_chart.value_formatter = lambda x: '%.2f' % x
+
     line_chart.render_to_file(f"{save_path}/{name}.svg")
     line_chart.render_to_png(f"{save_path}/{name}.png")
+
+
+def plot_bar_chart(name, peer_names, value_name, values, save_path):
+    bar_chart = pygal.Bar(x_label_rotation=90)
+    bar_chart.title = name
+    bar_chart.x_labels = peer_names
+
+    bar_chart.add(value_name, values)
+    bar_chart.render_to_file(f"{save_path}/{name}.svg")
+    bar_chart.render_to_png(f"{save_path}/{name}.png")
 
 
 def plot_pie_chart(name, dict_pairs, save_path):
@@ -57,49 +92,62 @@ def main():
     ietf_rfc_archive = "QmNvTjdqEPjZVWCvRWsFJA1vK7TTw1g9JP6we1WBJTRADM"
     xkcd = "QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm"
     old_files = "QmbsZEvJE8EU51HCUHQg2aem9JNFmFHdva3tGVYutdCXHp"
-
     
     Path("plots").mkdir(parents=True, exist_ok=True)
-    logging.info("Plot directory created")
+    logger.info("Plot directory created")
 
     # start downloading some files
     for cid in [ietf_rfc_archive, xkcd, old_files]:
         Path(f"./plots/{cid}").mkdir(parents=True, exist_ok=True)
         # start daemon
-        subprocess.call("ipfs daemon --init", shell=True)
+        d = subprocess.Popen("ipfs daemon --init", shell=True)
+        time.sleep(5)
 
-        logging.info("Daemon is ready")
+        logger.info(f"Garbage collection: {util.execute_gc()}")
 
         # get node id
         my_id = util.get_my_id()["ID"]
-        logging.info(f"My ID: {my_id}")
+        logger.info(f"My ID: {my_id}")
 
-        logging.info(f"Started download of {cid}")
+        logger.info(f"Started download of {cid}")
         proc = subprocess.Popen(
-            f"ipfs get {cid} -o D:\\prova",
+            f"ipfs get {cid} -o ./prova",
             shell=True
         )
 
-        while proc.poll() is None:
-            curr_wantlist = util.get_current_wantlist(my_id)
-            logging.info("[Wantlist (checked every 5 sec)]")
-            for block in curr_wantlist:
-                block_size = util.get_block_stat(block["/"])["Size"]
-                logging.info(
-                    f"Block Cid: {block['/']}, Block size:  {block_size}"
-                )
-            time.sleep(5)
-        logging.info("Download ended")
+        snap_thresh = 200
+        timestamps = []
+        rate_in_values = []
+        rate_out_values = []
+        while snap_thresh != 0 and proc.poll() is None:
+            time.sleep(1)
+            rate_in, rate_out = util.get_current_bw()
+
+            logger.debug(f"Rate in: {rate_in}, Rate out: {rate_out}")
+            current_time = datetime.now().strftime("%H:%M:%S")
+            timestamps.append(current_time)
+            rate_in_values.append(rate_in / 1024)
+            rate_out_values.append(rate_out / 1024)
+            snap_thresh -= 1
+
+        proc.wait()
+        logger.info("Download ended")
+
+        values = {
+            "Rate in": rate_in_values,
+            "Rate out": rate_out_values
+        }
+        plot_line_chart("Bandwidth snapshot (Kbs)", timestamps, values.keys(), values, f"./plots/{cid}")
 
         # get dag infos
-        dag = util.get_dag_stat(cid)
-        logging.info(f"[{cid} DAG] {dag}")
+        stat = util.get_object_stat(cid)
+        logger.info(f"[{cid} Object stat] {pp.pformat(stat)}")
 
         # get bitswap stats
         peers = util.get_bitswap_stat()
 
         filtered_peers = list(filter(lambda x: x["Recv"] > 0 or x["Sent"] > 0, peers))
-        logging.debug(f"[Filtered peers] {pp.pformat(filtered_peers)}")
+        logger.debug(f"[Filtered peers] {pp.pformat(filtered_peers)}")
 
         if len(filtered_peers) != 0:
             pie_values = {}
@@ -112,14 +160,14 @@ def main():
             peers_blocks = [peer["Exchanged"] for peer in filtered_peers]
             peers_total_values = [[peer["Recv"], peer["Sent"], peer["Exchanged"]] for peer in filtered_peers]
 
-            logging.info("Plotting bytes pie chart")
+            logger.info("Plotting bytes pie chart")
             plot_pie_chart("Content sent and received in bytes", pie_values, f"./plots/{cid}")
 
-            logging.info("Plotting exchanged blocks bar chart")
+            logger.info("Plotting exchanged blocks bar chart")
             names = list(pie_values.keys())
             plot_bar_chart("Content exchanged in blocks", names, "Blocks", peers_blocks, f"./plots/{cid}")
 
-            logging.info("Generating peers information table")
+            logger.info("Generating peers information table")
             generate_table(
                 "Peers information",
                 names,
@@ -130,13 +178,13 @@ def main():
 
             # show on map the peers from which we downloaded something
             peers_infos = util.get_peers_info(names)
-            logging.debug(f"[Peers infos] {pp.pformat(peers_infos)}")
+            logger.debug(f"[Peers infos] {pp.pformat(peers_infos)}")
 
             ccs = util.get_numb_country_codes(peers_infos)
-            logging.info("Plotting peers map")
+            logger.info("Plotting peers map")
             plot_map("Map of peers that exchanged with this node", ccs, f"./plots/{cid}")
 
-            logging.info("Generating peers geolocalization table")
+            logger.info("Generating peers geolocalization table")
             values = []
             ids = []
             for peer in peers_infos:
@@ -157,22 +205,26 @@ def main():
                 f"./plots/{cid}"
             )
 
-        logging.info(f"Garbage collection: {util.execute_gc()}")
-        logging.info(f"Shutdown: {util.shutdown()}")
+        logger.info(f"Shutdown: {util.shutdown()}")
+
+
+    # start daemon
+    d = subprocess.Popen("ipfs daemon --init", shell=True)
+    time.sleep(5)
 
     # get bootstrap nodes and locations, then generate map and table
     boots = util.get_bootstrap_nodes()
-    logging.debug(f"[Bootstrap nodes] {pp.pformat(boots)}")
+    logger.debug(f"[Bootstrap nodes] {pp.pformat(boots)}")
 
     if len(boots) != 0:
         boots_infos = util.get_peers_info(boots)
-        logging.debug(f"[Bootstrap nodes infos] {pp.pformat(boots_infos)}")
+        logger.debug(f"[Bootstrap nodes infos] {pp.pformat(boots_infos)}")
 
-        logging.info("Plotting bootstrap nodes map")
+        logger.info("Plotting bootstrap nodes map")
         ccs = util.get_numb_country_codes(boots_infos)
         plot_map("Map of bootstrap nodes", ccs, "./plots")
 
-        logging.info("Generating bootstrap nodes table")
+        logger.info("Generating bootstrap nodes table")
         values = []
         ids = []
         for boot in boots_infos:
@@ -195,17 +247,17 @@ def main():
 
     # get swarm peers and locations, then generate map
     swarm_ids = util.get_swarm_ids()
-    logging.debug(f"[Swarm nodes IDs] {swarm_ids}")
+    logger.debug(f"[Swarm nodes IDs] {swarm_ids}")
 
     if len(swarm_ids) != 0:
         swarm_infos = util.get_peers_info(swarm_ids)
-        logging.debug(f"[Swarm nodes infos] {pp.pformat(swarm_infos)}")
+        logger.debug(f"[Swarm nodes infos] {pp.pformat(swarm_infos)}")
 
-        logging.info("Plotting swarm nodes map")
+        logger.info("Plotting swarm nodes map")
         ccs = util.get_numb_country_codes(swarm_infos)
         plot_map("Map of swarm nodes", ccs, "./plots")
 
-        logging.info("Generating swarm nodes table")
+        logger.info("Generating swarm nodes table")
         
         values = []
         ids = []
@@ -227,8 +279,7 @@ def main():
         )
 
 
-if __name__ == "__main__":
-    logging.basicConfig(filename="info.log", level=logging.DEBUG)
-    logging.StreamHandler(sys.stdout)
+    logger.info(f"Shutdown: {util.shutdown()}")
 
+if __name__ == "__main__":
     main()

@@ -6,10 +6,11 @@ import logging
 base_api = "http://localhost:5001/api/v0/"
 
 bitswap_stat_api = base_api + "bitswap/stat"
-dag_stat_api = base_api + "dag/stat"
+object_stat_api = base_api + "object/stat"
+stats_bw_api = base_api + "stats/bw"
 block_stat_api = base_api + "block/stat"
 ledger_api = base_api + "bitswap/ledger"
-swarm_peers_api = base_api + "swarm/addrs"
+swarm_addrs_api = base_api + "swarm/addrs"
 bootstrap_list_api = base_api + "bootstrap/list"
 wantlist_api = base_api + "bitswap/wantlist"
 shutdown_api = base_api + "shutdown"
@@ -17,7 +18,7 @@ shutdown_api = base_api + "shutdown"
 id_api = base_api + "id"
 gc_api = base_api + "repo/gc"
 
-ip_api2 = "http://ipapi.co"
+geoloc_api = "http://ipapi.co"
 
 
 def get_my_id():
@@ -63,19 +64,20 @@ def get_peers_info(peers):
                 regex = "(^127\\.)|(^10\\.)|(^172\\.1[6-9]\\.)|(^172\\.2[0-9]\\.)|(^172\\.3[0-1]\\.)|(^192\\.168\\.)"
                 if splitted_addr[1] == "ip4" and re.search(regex, ip) is None and ip not in unique_ips:
                     unique_ips.add(ip)
-                    req = requests.get(f"{ip_api2}/{ip}/json/")
+                    req = requests.get(f"{geoloc_api}/{ip}/json/")
 
                     sc = req.status_code
 
                     if sc == 200:
                         req = req.json()
                         
+                        
                         ips.append({
                             "IP": ip,
-                            "Country": req["country_name"],
-                            "Region": req["region"],
-                            "City": req["city"],
-                            "Country_code": req["country_code"].lower()
+                            "Country": req["country_name"] if "country_name" in req else "",
+                            "Region": req["region"] if "region" in req else "",
+                            "City": req["city"] if "city" in req else "",
+                            "Country_code": req["country_code"].lower() if "country_code" in req else ""
                         })
             values.append(
                 {
@@ -88,7 +90,7 @@ def get_peers_info(peers):
 
 
 def get_swarm_ids():
-    swarm_addresses = requests.post(swarm_peers_api).json()
+    swarm_addresses = requests.post(swarm_addrs_api).json()
     ids = []
 
     thresh = 10
@@ -125,8 +127,16 @@ def get_bootstrap_nodes():
     return list(ids)
 
 
-def get_dag_stat(cid):
-    return requests.post(dag_stat_api, params={"arg": cid, "progress": "false"}).json()
+def get_current_bw():
+    res = requests.post(stats_bw_api).json()
+
+    rate_in = res["RateIn"]
+    rate_out = res["RateOut"]
+    return rate_in, rate_out
+
+
+def get_object_stat(cid):
+    return requests.post(object_stat_api, params={"arg": cid}).json()
 
 
 def execute_gc():
