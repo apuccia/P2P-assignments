@@ -37,7 +37,7 @@ logger.addHandler(fh)
 
 
 def plot_line_chart(name, timestamps, value_names, values, save_path):
-    line_chart = pygal.Line(x_label_rotation=45)
+    line_chart = pygal.Line(x_label_rotation=45, show_minor_x_labels=False)
     line_chart.title = name
     line_chart.x_labels = timestamps
     chart.x_labels_major = timestamps[::20]
