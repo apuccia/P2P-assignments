@@ -1,6 +1,8 @@
 import requests
 import re
 import logging
+import sys
+import time
 
 # base_api endpoint
 base_api = "http://localhost:5001/api/v0/"
@@ -20,9 +22,31 @@ gc_api = base_api + "repo/gc"
 
 geoloc_api = "http://ipapi.co"
 
+# create logger
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+ch = logging.StreamHandler(sys.stdout)
+fh = logging.FileHandler("info.log")
+ch.setLevel(logging.DEBUG)
+fh.setLevel(logging.DEBUG)
+
+# create formatter
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+
+# add formatter to ch
+ch.setFormatter(formatter)
+fh.setFormatter(formatter)
+
+# add ch to logger
+logger.addHandler(ch)
+logger.addHandler(fh)
+
 
 def get_my_id():
-    return requests.post(id_api).json()
+    req = requests.post(id_api).json()
+
+    return req
 
 
 def get_bitswap_stat():
@@ -51,7 +75,7 @@ def get_block_stat(block_cid):
 def get_peers_info(peers):
     values = []
     for peer in peers:
-        
+
         req = requests.post(id_api, params={"arg": peer}).json()
 
         if "Addresses" in req:
@@ -59,32 +83,54 @@ def get_peers_info(peers):
             ips = []
             for addr in req["Addresses"]:
                 splitted_addr = addr.split("/")
-                # Considering only ip4 addresses
+                # Considering only ipv4 addresses
                 ip = splitted_addr[2]
-                regex = "(^127\\.)|(^10\\.)|(^172\\.1[6-9]\\.)|(^172\\.2[0-9]\\.)|(^172\\.3[0-1]\\.)|(^192\\.168\\.)"
-                if splitted_addr[1] == "ip4" and re.search(regex, ip) is None and ip not in unique_ips:
-                    unique_ips.add(ip)
-                    req = requests.get(f"{geoloc_api}/{ip}/json/")
+                regex = "(^127\\.)|(^10\\.)|(^172\\.1[6-9]\\.)|"\
+                    "(^172\\.2[0-9]\\.)|(^172\\.3[0-1]\\.)|(^192\\.168\\.)"
+                if (
+                    splitted_addr[1] == "ip4"
+                    and re.search(regex, ip) is None
+                    and ip not in unique_ips
+                ):
+                    try:
+                        req = requests.get(f"{geoloc_api}/{ip}/json/")
+                    except requests.exceptions.RequestException as e:
+                        logger.critical(e)
+                        sys.exit(1)
 
                     sc = req.status_code
-
                     if sc == 200:
                         req = req.json()
-                        
-                        
-                        ips.append({
-                            "IP": ip,
-                            "Country": req["country_name"] if "country_name" in req else "",
-                            "Region": req["region"] if "region" in req else "",
-                            "City": req["city"] if "city" in req else "",
-                            "Country_code": req["country_code"].lower() if "country_code" in req else ""
-                        })
-            values.append(
-                {
-                    "ID": peer,
-                    "IPs_info": list(ips)
-                }
-            )
+                        ips.append(
+                            {
+                                "IP": ip,
+                                "Country": req["country_name"]
+                                if "country_name" in req
+                                else "",
+                                "Region": req["region"] if "region" in req else "",
+                                "City": req["city"] if "city" in req else "",
+                                "Country_code": req["country_code"].lower()
+                                if "country_code" in req
+                                else "",
+                            }
+                        )
+                    else:
+                        logger.warning(f"[ipapi.co] {req.status_code}")
+                        ips.append(
+                            {
+                                "IP": ip,
+                                "Country": "",
+                                "Region": "",
+                                "City": "",
+                                "Country_code": ""
+                            }
+                        )   
+
+                    unique_ips.add(ip)
+                    # trying to avoid too many requests 429
+                    time.sleep(2)
+
+            values.append({"ID": peer, "IPs_info": list(ips)})
 
     return values
 
@@ -93,7 +139,7 @@ def get_swarm_ids():
     swarm_addresses = requests.post(swarm_addrs_api).json()
     ids = []
 
-    thresh = 10
+    thresh = 30
     for peer in swarm_addresses["Addrs"]:
         if thresh == 0:
             break
