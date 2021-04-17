@@ -18,18 +18,20 @@ wantlist_api = base_api + "bitswap/wantlist"
 shutdown_api = base_api + "shutdown"
 
 id_api = base_api + "id"
+ping_api = base_api + "ping"
 gc_api = base_api + "repo/gc"
 
+# 1000 requests per day
 geoloc_api = "http://ipapi.co"
 
 # create logger
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 ch = logging.StreamHandler(sys.stdout)
 fh = logging.FileHandler("info.log")
-ch.setLevel(logging.DEBUG)
-fh.setLevel(logging.DEBUG)
+ch.setLevel(logging.INFO)
+fh.setLevel(logging.INFO)
 
 # create formatter
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -49,16 +51,28 @@ def get_my_id():
     return req
 
 
+def get_id(id):
+    req = requests.post(id_api, params={"arg": id}).json()
+
+    return req
+
+
+def ping(id):
+    req = requests.post(ping_api, params={"arg": id}).text
+
+    return req
+
+
 def get_bitswap_stat():
     req = requests.post(bitswap_stat_api, params={"human": "true", "verbose": "true"})
     resp = req.json()
 
-    peers = []
+    peers_ledgers = []
     for peer in resp["Peers"]:
         req = requests.post(ledger_api, params={"arg": peer})
-        peers.append(req.json())
+        peers_ledgers.append(req.json())
 
-    return peers
+    return peers_ledgers, resp
 
 
 def get_current_wantlist(peer_id):
@@ -85,8 +99,8 @@ def get_peers_info(peers):
                 splitted_addr = addr.split("/")
                 # Considering only ipv4 addresses
                 ip = splitted_addr[2]
-                regex = "(^127\\.)|(^10\\.)|(^172\\.1[6-9]\\.)|"\
-                    "(^172\\.2[0-9]\\.)|(^172\\.3[0-1]\\.)|(^192\\.168\\.)"
+                regex = ("(^127\\.)|(^10\\.)|(^172\\.1[6-9]\\.)| "
+                    "(^172\\.2[0-9]\\.)|(^172\\.3[0-1]\\.)|(^192\\.168\\.)")
                 if (
                     splitted_addr[1] == "ip4"
                     and re.search(regex, ip) is None
@@ -128,7 +142,7 @@ def get_peers_info(peers):
 
                     unique_ips.add(ip)
                     # trying to avoid too many requests 429
-                    time.sleep(2)
+                    time.sleep(3)
 
             values.append({"ID": peer, "IPs_info": list(ips)})
 
@@ -139,7 +153,7 @@ def get_swarm_ids():
     swarm_addresses = requests.post(swarm_addrs_api).json()
     ids = []
 
-    thresh = 30
+    thresh = 70
     for peer in swarm_addresses["Addrs"]:
         if thresh == 0:
             break
@@ -147,20 +161,6 @@ def get_swarm_ids():
         thresh -= 1
 
     return ids
-
-
-def get_numb_country_codes(peers):
-    ccs = {}
-    for peer in peers:
-        for ip in peer["IPs_info"]:
-            print(ip)
-            cc = ip["Country_code"]
-            if cc in ccs:
-                ccs[cc] += 1
-            else:
-                ccs[cc] = 1
-
-    return ccs
 
 
 def get_bootstrap_nodes():
@@ -174,7 +174,8 @@ def get_bootstrap_nodes():
 
 
 def get_current_bw():
-    res = requests.post(stats_bw_api).json()
+    # new version of the protocol released in June 2020
+    res = requests.post(stats_bw_api, params={"proto": "/ipfs/bitswap/1.2.0"}).json()
 
     rate_in = res["RateIn"]
     rate_out = res["RateOut"]
@@ -182,7 +183,13 @@ def get_current_bw():
 
 
 def get_object_stat(cid):
-    return requests.post(object_stat_api, params={"arg": cid}).json()
+    res = requests.post(object_stat_api, params={"arg": cid}).json()
+
+    if "Message" in res:
+        logger.warning(res["Message"])
+        return None
+
+    return res
 
 
 def execute_gc():

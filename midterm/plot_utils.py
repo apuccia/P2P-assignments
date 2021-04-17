@@ -1,4 +1,3 @@
-
 import matplotlib.pyplot as plt
 import pygal
 
@@ -54,8 +53,10 @@ def generate_table(table_name, row_headers, col_headers, values, save_path):
         loc="center",
         cellLoc="center",
     )
-    table.scale(1.5, 1.5)
-
+    table.auto_set_column_width(col=list(range(len(col_headers))))
+    table.auto_set_font_size(False)
+    table.set_fontsize(8)
+    
     plt.axis("off")
     plt.grid(False)
     plt.savefig(f"{save_path}/{table_name}.png", bbox_inches="tight")
