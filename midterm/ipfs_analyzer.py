@@ -16,7 +16,6 @@ import plot_utils
 
 xkcd = "QmdmQXB2mzChmMeKY47C43LxUdg1NDJ5MWcKMKxDu7RgQm"
 old_files = "QmbsZEvJE8EU51HCUHQg2aem9JNFmFHdva3tGVYutdCXHp"
-rfc_archive = "QmNvTjdqEPjZVWCvRWsFJA1vK7TTw1g9JP6we1WBJTRADM"
 
 
 parser = argparse.ArgumentParser()
@@ -110,7 +109,7 @@ def main():
     args = parser.parse_args()
 
     # standard cids used for the experiment
-    cids = [xkcd, old_files, rfc_archive]
+    cids = [xkcd, old_files]
     if args.cids:
         cids = args.cids
 
@@ -122,7 +121,7 @@ def main():
     # start downloading some files
     for cid in cids:
         # start daemon and wait some seconds for initialization
-        d = subprocess.Popen("ipfs daemon --init", shell=True)
+        d = subprocess.Popen("ipfs daemon", shell=True)
         time.sleep(5)
 
         if d.poll() != None:
@@ -192,7 +191,7 @@ def main():
         )
 
         rate_values = {"Rate in": rate_in_values, "Rate out": rate_out_values}
-        logger.info(f"[{cid}] Started plotting bandwidth chart")
+        logger.info(f"[{cid}] Plotting bandwidth chart")
         plot_utils.plot_line_chart(
             "Bandwidth snapshot (KBps)",
             timestamps,
@@ -273,7 +272,7 @@ def main():
 
             # show on map the peers from which we downloaded something
             logger.info(
-                f"[{cid}] Started getting geolocalization information"
+                f"[{cid}] Getting geolocalization information"
             )
             peers_info = api_utils.get_peers_info(ids)
             logger.debug(f"[{cid}] Peers info:\n{pp.pformat(peers_info)}")
@@ -316,7 +315,7 @@ def main():
 
         if len(boots) != 0:
             logger.info(
-                f"[Bootstrap nodes info] Started getting geolocalization information"
+                f"[Bootstrap nodes info] Getting geolocalization information"
             )
             boots_info = api_utils.get_peers_info(boots)
             logger.debug(f"[Bootstrap nodes info]\n{pp.pformat(boots_info)}")
@@ -336,7 +335,7 @@ def main():
                 boot_table_values,
                 "./plots",
             )
-        logger.info(f"[Swarm] Shutdown: {api_utils.shutdown()}")
+        logger.info(f"Shutdown: {api_utils.shutdown()}")
 
     # option -s/--swarmnodes specified
     if args.swarmnodes:
@@ -355,7 +354,7 @@ def main():
 
         if len(swarm_ids) != 0:
             logger.info(
-                f"[Swarm nodes info] Started getting geolocalization information"
+                f"[Swarm nodes info] Getting geolocalization information"
             )
             swarm_info = api_utils.get_peers_info(swarm_ids)
             logger.debug(f"[Swarm nodes infos]\n{pp.pformat(swarm_info)}")
@@ -375,7 +374,7 @@ def main():
                 "./plots",
             )
 
-        logger.info(f"[Swarm] Shutdown: {api_utils.shutdown()}")
+        logger.info(f"Shutdown: {api_utils.shutdown()}")
 
 
 if __name__ == "__main__":
