@@ -4,3 +4,5 @@ __pycache__
 plots
 
 *.log
+
+build
