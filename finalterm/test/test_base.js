@@ -4,7 +4,7 @@ require('chai')
 .should();
 
 const assert = require("chai").assert;
-const truffleAssert = require('truffle-assertions');
+const truffleAssert = require("truffle-assertions");
 
 const Mayor = artifacts.require("Mayor");
 
@@ -13,6 +13,7 @@ CANOPEN_ERROR_MSG = "Cannot open an envelope, voting quorum not reached yet";
 NOTCASTED_ERROR_MSG = "The sender has not casted any votes";
 WRONGENV_ERROR_MSG = "Sent envelope does not correspond to the one casted";
 CANCHECK_ERROR_MSG = "Cannot check the winner, need to open all the sent envelopes";
+PROTODONE_ERROR_MSG = "Mayor already confirmed/kicked";
 
 contract("MayorTest", accounts => {
     describe("Test constructor", function() {
@@ -119,16 +120,23 @@ contract("MayorTest", accounts => {
             const receipt = await mayor.open_envelope(sigil, true, {from: accounts[2], value: 50});
             const balanceVoterAfter = await web3.eth.getBalance(accounts[2]);
 
+            console.log(receipt.receipt);
+
             const gasUsed = receipt.receipt.gasUsed;
             const tx = await web3.eth.getTransaction(receipt.tx);
             const gasTotalPrice = parseInt(tx.gasPrice) * gasUsed;
 
-            assert.equal(parseInt(balanceVoterAfter) + gasTotalPrice + 50, parseInt(balanceVoterBefore), "Must be equal");
+            console.log(tx);
+
+            console.log("BalanceVoterBefore " + balanceVoterBefore);
+            console.log("Total gas cost " + gasTotalPrice);
+            console.log("BalanceVoterAfter " + balanceVoterAfter);
+
+            assert(BigInt(balanceVoterAfter) + BigInt(gasTotalPrice) + BigInt(50) == BigInt(balanceVoterBefore), "Must be equal");
 
             truffleAssert.eventEmitted(receipt, "EnvelopeOpen", (event) => {
                 return event._voter === accounts[2] && event._soul == 50 && event._doblon == true;
             });
-
             const souls = await mayor.yaySoul();
             assert.equal(souls, 50, "The yaySouls are " + souls);
 
@@ -141,29 +149,37 @@ contract("MayorTest", accounts => {
             console.log("Contract address is " + mayor.address);
 
             const sigil = Math.floor(Math.random() * 100);
-            const envelope = await mayor.compute_envelope(sigil, false, 50);
+            const envelope = await mayor.compute_envelope(sigil, false, 1000);
 
             await mayor.cast_envelope(envelope, {from: accounts[2]});
 
             const balanceVoterBefore = await web3.eth.getBalance(accounts[2]); 
-            const receipt = await mayor.open_envelope(sigil, false, {from: accounts[2], value: 50});
+            const receipt = await mayor.open_envelope(sigil, false, {from: accounts[2], value: 1000});
             const balanceVoterAfter = await web3.eth.getBalance(accounts[2]);
+
+            console.log(receipt);
 
             const gasUsed = receipt.receipt.gasUsed;
             const tx = await web3.eth.getTransaction(receipt.tx);
             const gasTotalPrice = parseInt(tx.gasPrice) * gasUsed;
 
-            assert.equal(parseInt(balanceVoterAfter) + gasTotalPrice + 50, parseInt(balanceVoterBefore), "Must be equal");
+            console.log(tx);
+
+            console.log("BalanceVoterBefore " + balanceVoterBefore);
+            console.log("Total gas cost " + gasTotalPrice);
+            console.log("BalanceVoterAfter " + balanceVoterAfter);
+
+            assert(BigInt(balanceVoterAfter) + BigInt(gasTotalPrice) + BigInt(1000) == BigInt(balanceVoterBefore), "Must be equal");
 
             truffleAssert.eventEmitted(receipt, "EnvelopeOpen", (event) => {
-                return event._voter === accounts[2] && event._soul == 50 && event._doblon == false;
+                return event._voter === accounts[2] && event._soul == 1000 && event._doblon == false;
             });
 
             const souls = await mayor.naySoul();
-            assert.equal(souls, 50, "The naySouls are " + souls);
+            assert.equal(souls, 1000, "The naySouls are " + souls);
 
             const mayorBalance = await web3.eth.getBalance(mayor.address);
-            assert.equal(mayorBalance, 50, "Mayor balance is " + mayorBalance);
+            assert.equal(mayorBalance, 1000, "Mayor balance is " + mayorBalance);
         });
     });
 
@@ -203,18 +219,28 @@ contract("MayorTest", accounts => {
             const balanceEscrowBefore = await web3.eth.getBalance(accounts[1]); 
             const balanceLoserBefore = await web3.eth.getBalance(accounts[4]); 
             const balanceCandidateBefore = await web3.eth.getBalance(accounts[0]); 
-            const receipt = await mayor.mayor_or_sayonara();
+            const receipt = await mayor.mayor_or_sayonara({from: accounts[0]});
             const balanceCandidateAfter = await web3.eth.getBalance(accounts[0]);
             const balanceLoserAfter = await web3.eth.getBalance(accounts[4]);
-            const balanceEscrowAfter = await web3.eth.getBalance(accounts[1]);  
+            const balanceEscrowAfter = await web3.eth.getBalance(accounts[1]); 
+            
+            console.log("BalanceEscrowBefore " + balanceEscrowBefore);
+            console.log("BalanceEscrowAfter " + balanceEscrowAfter);
+
+            console.log("BalanceLoserBefore " + balanceLoserBefore);
+            console.log("BalanceLoserAfter " + balanceLoserAfter);
 
             const gasUsed = receipt.receipt.gasUsed;
             const tx = await web3.eth.getTransaction(receipt.tx);
             const gasTotalPrice = parseInt(tx.gasPrice) * gasUsed;
 
+            console.log("BalanceCandidateBefore " + balanceCandidateBefore);
+            console.log("Gas Total Price " + gasTotalPrice);
+            console.log("BalanceCandidateAfter " + balanceCandidateAfter);
+
             assert.equal(balanceEscrowAfter, balanceEscrowBefore, "Must be equal");
-            assert.equal(parseInt(balanceCandidateAfter) + gasTotalPrice + 100, parseInt(balanceCandidateBefore), "Must be equal");
-            assert.equal(parseInt(balanceLoserAfter) - 100, parseInt(balanceLoserBefore), "Must be equal");
+            assert(BigInt(balanceCandidateAfter) + BigInt(gasTotalPrice) - BigInt(100) == BigInt(balanceCandidateBefore), "Must be equal");
+            assert(BigInt(balanceLoserAfter) - BigInt(100) == BigInt(balanceLoserBefore), "Must be equal");
 
             truffleAssert.eventEmitted(receipt, "NewMayor", (event) => {
                 return event._candidate === accounts[0];
@@ -245,26 +271,36 @@ contract("MayorTest", accounts => {
             const sigilKicked2 = Math.floor(Math.random() * 100);
             const envelopeKicked2 = await mayor.compute_envelope(sigilKicked2, false, 100);
             await mayor.cast_envelope(envelopeKicked2, {from: accounts[4]});
-
+ 
             await mayor.open_envelope(sigilConfirmed, true, {from: accounts[2], value: 50});
             await mayor.open_envelope(sigilKicked1, false, {from: accounts[3], value: 50});
             await mayor.open_envelope(sigilKicked2, false, {from: accounts[4], value: 100});
 
-            const balanceEscrowBefore = await web3.eth.getBalance(accounts[1]); 
-            const balanceLoserBefore = await web3.eth.getBalance(accounts[4]); 
+            const balanceEscrowBefore = await web3.eth.getBalance(accounts[1]);
+            const balanceLoserBefore = await web3.eth.getBalance(accounts[2]);
             const balanceCandidateBefore = await web3.eth.getBalance(accounts[0]); 
-            const receipt = await mayor.mayor_or_sayonara();
+            const receipt = await mayor.mayor_or_sayonara({from: accounts[0]});
             const balanceCandidateAfter = await web3.eth.getBalance(accounts[0]);
-            const balanceLoserAfter = await web3.eth.getBalance(accounts[4]);
+            const balanceLoserAfter = await web3.eth.getBalance(accounts[2]);
             const balanceEscrowAfter = await web3.eth.getBalance(accounts[1]); 
+
+            console.log("BalanceEscrowBefore " + balanceEscrowBefore);
+            console.log("BalanceEscrowAfter " + balanceEscrowAfter);
+
+            console.log("BalanceLoserBefore " + balanceLoserBefore);
+            console.log("BalanceLoserAfter " + balanceLoserAfter);
 
             const gasUsed = receipt.receipt.gasUsed;
             const tx = await web3.eth.getTransaction(receipt.tx);
             const gasTotalPrice = parseInt(tx.gasPrice) * gasUsed;
 
-            assert.equal(parseInt(balanceEscrowAfter) + 100, parseInt(balanceEscrowBefore), "Must be equal");
-            assert.equal(parseInt(balanceCandidateAfter) + gasTotalPrice, parseInt(balanceCandidateBefore), "Must be equal");
-            assert.equal(parseInt(balanceLoserAfter) - 100, parseInt(balanceLoserBefore), "Must be equal");
+            console.log("BalanceCandidateBefore " + balanceCandidateBefore);
+            console.log("Gas Total Price " + gasTotalPrice);
+            console.log("BalanceCandidateAfter " + balanceCandidateAfter);
+
+            assert((BigInt(balanceEscrowAfter) - BigInt(150)) == BigInt(balanceEscrowBefore), "Must be equal");
+            assert((BigInt(balanceCandidateAfter) + BigInt(gasTotalPrice)) == BigInt(balanceCandidateBefore), "Must be equal");
+            assert((BigInt(balanceLoserAfter) - BigInt(50)) == BigInt(balanceLoserBefore), "Must be equal");
 
             truffleAssert.eventEmitted(receipt, "Sayonara", (event) => {
                 return event._escrow === accounts[1];
@@ -278,6 +314,31 @@ contract("MayorTest", accounts => {
 
             const mayorBalance = await web3.eth.getBalance(mayor.address);
             assert.equal(mayorBalance, 0, "Mayor balance is " + mayorBalance);
+        });
+
+        it("Should not repeat the mayor_or_sayonara", async function () {
+            const mayor = await Mayor.new(accounts[0], accounts[1], 3);
+            console.log("Contract address is " + mayor.address);
+
+            const sigilConfirmed1 = Math.floor(Math.random() * 100);
+            const envelopeConfirmed1 = await mayor.compute_envelope(sigilConfirmed1, true, 50);
+            await mayor.cast_envelope(envelopeConfirmed1, {from: accounts[2]});
+
+            const sigilConfirmed2 = Math.floor(Math.random() * 100);
+            const envelopeConfirmed2 = await mayor.compute_envelope(sigilConfirmed2, true, 50);
+            await mayor.cast_envelope(envelopeConfirmed2, {from: accounts[3]});
+
+            const sigilKicked = Math.floor(Math.random() * 100);
+            const envelopeKicked = await mayor.compute_envelope(sigilKicked, false, 100);
+            await mayor.cast_envelope(envelopeKicked, {from: accounts[4]});
+
+            await mayor.open_envelope(sigilConfirmed1, true, {from: accounts[2], value: 50});
+            await mayor.open_envelope(sigilConfirmed2, true, {from: accounts[3], value: 50});
+            await mayor.open_envelope(sigilKicked, false, {from: accounts[4], value: 100});
+
+            await mayor.mayor_or_sayonara({from: accounts[0]});
+
+            await mayor.mayor_or_sayonara({from: accounts[0]}).should.be.rejectedWith(PROTODONE_ERROR_MSG);
         });
     });
 });
