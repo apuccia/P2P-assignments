@@ -41,12 +41,21 @@ contract Mayor {
         require(voting_condition.envelopes_opened == voting_condition.quorum, "Cannot check the winner, need to open all the sent envelopes");
         _;
     }
+
+    // Added to prevent further calls of mayor_or_sayonara
+    modifier protocolDone() {
+        require(protocolEnded == false, "Mayor already confirmed/kicked");
+        _;
+    }
     
     // State attributes
     
     // Initialization variables
     address payable public candidate;
     address payable public escrow;
+
+    // Used to check the modifier protocolDone
+    bool protocolEnded = false;
     
     // Voting phase variables
     mapping(address => bytes32) envelopes;
@@ -56,6 +65,7 @@ contract Mayor {
     uint public naySoul;
     uint public yaySoul;
 
+    // Added to keep track of the results during the opening
     uint yayVote;
     uint nayVote;
 
@@ -124,7 +134,7 @@ contract Mayor {
     
     
     /// @notice Either confirm or kick out the candidate. Refund the electors who voted for the losing outcome
-    function mayor_or_sayonara() canCheckOutcome public {
+    function mayor_or_sayonara() canCheckOutcome protocolDone public {
         bool _confirmed = false;
         
         if (yayVote > nayVote) {
@@ -151,12 +161,14 @@ contract Mayor {
         if (_confirmed){
             _val = yaySoul;
             yaySoul = 0;
+            protocolEnded = true;
             candidate.transfer(_val);
             emit NewMayor(candidate);
         }
         else{
             _val = naySoul;
             naySoul = 0;
+            protocolEnded = true;
             escrow.transfer(_val);
             emit Sayonara(escrow);
         }
