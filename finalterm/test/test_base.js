@@ -3,7 +3,7 @@ require('chai')
 .use(require('chai-as-promised'))
 .should();
 
-const assert = require("chai").assert;
+// used to test contract events
 const truffleAssert = require("truffle-assertions");
 
 const Mayor = artifacts.require("Mayor");
