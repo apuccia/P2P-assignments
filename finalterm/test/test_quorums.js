@@ -22,10 +22,12 @@ contract("MayorTest", accounts => {
             const mayor = await Mayor.new(accounts[0], accounts[100], 25);
             const mayorFactory = await MayorFactory.new();
 
-            gasUsed = await mayorFactory.create_instance.estimateGas(accounts[0], accounts[100], 25);
+            receipt = await mayorFactory.create_instance(accounts[0], accounts[100], 25);
+            gasUsed = BigInt(receipt.receipt.gasUsed);
+            
             myConsole.log("[constructor] Gas used: " + gasUsed + "\n");
 
-            totalGasUsed += BigInt(gasUsed);
+            totalGasUsed += gasUsed;
 
             for (var i = 0; i < 25; i++) {
                 sigils[i] = Math.floor(Math.random() * 10000);
@@ -82,7 +84,8 @@ contract("MayorTest", accounts => {
             const mayor = await Mayor.new(accounts[0], accounts[100], 50);
             const mayorFactory = await MayorFactory.new();
 
-            gasUsed = await mayorFactory.create_instance.estimateGas(accounts[0], accounts[100], 50);
+            receipt = await mayorFactory.create_instance(accounts[0], accounts[100], 50);
+            gasUsed = BigInt(receipt.receipt.gasUsed);
             myConsole.log("[constructor] Gas used: " + gasUsed + "\n");
 
             totalGasUsed += BigInt(gasUsed);
@@ -142,7 +145,8 @@ contract("MayorTest", accounts => {
             const mayor = await Mayor.new(accounts[0], accounts[100], 75);
             const mayorFactory = await MayorFactory.new();
 
-            gasUsed = await mayorFactory.create_instance.estimateGas(accounts[0], accounts[100], 75);
+            receipt = await mayorFactory.create_instance(accounts[0], accounts[100], 75);
+            gasUsed = BigInt(receipt.receipt.gasUsed);
             myConsole.log("[constructor] Gas used: " + gasUsed + "\n");
 
             totalGasUsed += BigInt(gasUsed);
@@ -202,7 +206,8 @@ contract("MayorTest", accounts => {
             const mayor = await Mayor.new(accounts[0], accounts[100], 100);
             const mayorFactory = await MayorFactory.new();
 
-            gasUsed = await mayorFactory.create_instance.estimateGas(accounts[0], accounts[100], 100);
+            receipt = await mayorFactory.create_instance(accounts[0], accounts[100], 100);
+            gasUsed = BigInt(receipt.receipt.gasUsed);
             myConsole.log("[constructor] Gas used: " + gasUsed + "\n");
 
             totalGasUsed += BigInt(gasUsed);
@@ -228,6 +233,130 @@ contract("MayorTest", accounts => {
             }
 
             for (var i = 0; i < 100; i++) {
+                receipt = await mayor.open_envelope(sigils[i], doblons[i], {from: accounts[i], value: souls[i]});
+
+                gasUsed = BigInt(receipt.receipt.gasUsed);
+
+                totalGasUsed += gasUsed;
+                myConsole.log("[open_envelope] Gas used: " + gasUsed);
+            }
+
+            receipt = await mayor.mayor_or_sayonara({from: accounts[0]});
+
+            gasUsed = BigInt(receipt.receipt.gasUsed);
+
+            totalGasUsed += gasUsed;
+            myConsole.log("[mayor_or_sayonara] Gas used: " + gasUsed + "\n");
+
+            myConsole.log("All gas used: " + totalGasUsed);
+        });
+    });
+
+    describe("Test consumed gas with quorum of 25 voters, all positive votes", function() {
+        it("", async function () {
+            var sigils = [];
+            var doblons = [];
+            var souls = [];
+            var envelopes = [];
+            var receipt;
+            var totalGasUsed = BigInt(0);
+            var gasUsed;
+
+            myConsole.log("---------GAS USED FOR 25 VOTERS QUORUM (all positive)---------");
+
+            const mayor = await Mayor.new(accounts[0], accounts[100], 25);
+            const mayorFactory = await MayorFactory.new();
+
+            receipt = await mayorFactory.create_instance(accounts[0], accounts[100], 25);
+            gasUsed = BigInt(receipt.receipt.gasUsed);
+            
+            myConsole.log("[constructor] Gas used: " + gasUsed + "\n");
+
+            totalGasUsed += gasUsed;
+
+            for (var i = 0; i < 25; i++) {
+                sigils[i] = Math.floor(Math.random() * 10000);
+                doblons[i] = true;
+                souls[i] = Math.floor(Math.random() * 10000);
+                
+                gasUsed = await mayor.compute_envelope.estimateGas(sigils[i], doblons[i], souls[i]);
+                envelopes[i] = await mayor.compute_envelope(sigils[i], doblons[i], souls[i]);
+
+                totalGasUsed += BigInt(gasUsed);
+
+                myConsole.log("[compute_envelope] Gas used: " + gasUsed);
+
+                receipt = await mayor.cast_envelope(envelopes[i], {from: accounts[i]});
+
+                gasUsed = BigInt(receipt.receipt.gasUsed);
+
+                totalGasUsed += gasUsed;
+                myConsole.log("[cast_envelope] Gas used: " + gasUsed);
+            }
+
+            for (var i = 0; i < 25; i++) {
+                receipt = await mayor.open_envelope(sigils[i], doblons[i], {from: accounts[i], value: souls[i]});
+
+                gasUsed = BigInt(receipt.receipt.gasUsed);
+
+                totalGasUsed += gasUsed;
+                myConsole.log("[open_envelope] Gas used: " + gasUsed);
+            }
+
+            receipt = await mayor.mayor_or_sayonara({from: accounts[0]});
+
+            gasUsed = BigInt(receipt.receipt.gasUsed);
+
+            totalGasUsed += gasUsed;
+            myConsole.log("[mayor_or_sayonara] Gas used: " + gasUsed + "\n");
+
+            myConsole.log("All gas used: " + totalGasUsed);
+        });
+    });
+
+    describe("Test consumed gas with quorum of 25 voters, all negative votes", function() {
+        it("", async function () {
+            var sigils = [];
+            var doblons = [];
+            var souls = [];
+            var envelopes = [];
+            var receipt;
+            var totalGasUsed = BigInt(0);
+            var gasUsed;
+
+            myConsole.log("---------GAS USED FOR 25 VOTERS QUORUM (all negative)---------");
+
+            const mayor = await Mayor.new(accounts[0], accounts[100], 25);
+            const mayorFactory = await MayorFactory.new();
+
+            receipt = await mayorFactory.create_instance(accounts[0], accounts[100], 25);
+            gasUsed = BigInt(receipt.receipt.gasUsed);
+            
+            myConsole.log("[constructor] Gas used: " + gasUsed + "\n");
+
+            totalGasUsed += gasUsed;
+
+            for (var i = 0; i < 25; i++) {
+                sigils[i] = Math.floor(Math.random() * 10000);
+                doblons[i] = false;
+                souls[i] = Math.floor(Math.random() * 10000);
+                
+                gasUsed = await mayor.compute_envelope.estimateGas(sigils[i], doblons[i], souls[i]);
+                envelopes[i] = await mayor.compute_envelope(sigils[i], doblons[i], souls[i]);
+
+                totalGasUsed += BigInt(gasUsed);
+
+                myConsole.log("[compute_envelope] Gas used: " + gasUsed);
+
+                receipt = await mayor.cast_envelope(envelopes[i], {from: accounts[i]});
+
+                gasUsed = BigInt(receipt.receipt.gasUsed);
+
+                totalGasUsed += gasUsed;
+                myConsole.log("[cast_envelope] Gas used: " + gasUsed);
+            }
+
+            for (var i = 0; i < 25; i++) {
                 receipt = await mayor.open_envelope(sigils[i], doblons[i], {from: accounts[i], value: souls[i]});
 
                 gasUsed = BigInt(receipt.receipt.gasUsed);
