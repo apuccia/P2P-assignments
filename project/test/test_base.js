@@ -150,7 +150,7 @@ contract("MayorTest", accounts => {
             assert(BigInt(balanceVoterAfter) + BigInt(gasTotalPrice) + BigInt(50) == BigInt(balanceVoterBefore), "Must be equal");
 
             truffleAssert.eventEmitted(receipt, "EnvelopeOpen", (event) => {
-                return event._voter === accounts[2] && event._soul == 50 && event._doblon == accounts[2];
+                return event._voter === accounts[2] && event._soul == 50 && event._symbol == accounts[2];
             });
             const accumulatedVote = await mayor.candidates(accounts[2]);
             assert.equal(accumulatedVote.souls, 50, "The souls are " + accumulatedVote.souls);

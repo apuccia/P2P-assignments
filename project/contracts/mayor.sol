@@ -9,7 +9,7 @@ contract Mayor {
     // Store refund data
     struct Refund {
         uint soul;
-        address doblon;
+        address symbol;
     }
     
     // Data to manage the confirmation
@@ -28,7 +28,7 @@ contract Mayor {
     event NewMayor(address _candidate);
     event Tie(address _escrow);
     event EnvelopeCast(address _voter);
-    event EnvelopeOpen(address _voter, uint _soul, address _doblon);
+    event EnvelopeOpen(address _voter, uint _soul, address _symbol);
     
     // Someone can vote as long as the quorum is not reached
     modifier canVote() {
@@ -89,7 +89,7 @@ contract Mayor {
 
     
     /// @notice Store a received voting envelope
-    /// @param _envelope The envelope represented as the keccak256 hash of (sigil, doblon, soul) 
+    /// @param _envelope The envelope represented as the keccak256 hash of (sigil, symbol, soul) 
     function cast_envelope(bytes32 _envelope) canVote public {
         if(envelopes[msg.sender] == 0x0) // => NEW, update on 17/05/2021
             voting_condition.envelopes_casted++;
@@ -101,10 +101,10 @@ contract Mayor {
     
     /// @notice Open an envelope and store the vote information
     /// @param _sigil (uint) The secret sigil of a voter
-    /// @param _doblon (address) The voting preference
+    /// @param _symbol (address) The voting preference
     /// @dev The soul is sent as crypto
     /// @dev Need to recompute the hash to validate the envelope previously casted
-    function open_envelope(uint _sigil, address _doblon) canOpen public payable {
+    function open_envelope(uint _sigil, address _symbol) canOpen public payable {
         
         // TODO Complete this function
 
@@ -113,21 +113,21 @@ contract Mayor {
         bytes32 _casted_envelope = envelopes[msg.sender];
         
         uint _soul = msg.value;
-        bytes32 _sent_envelope = compute_envelope(_sigil, _doblon, _soul);
+        bytes32 _sent_envelope = compute_envelope(_sigil, _symbol, _soul);
 
         require(_casted_envelope == _sent_envelope, "Sent envelope does not correspond to the one casted");
         
         voting_condition.envelopes_opened++;
         voters.push(msg.sender);
-        candidates[_doblon].souls += _soul;
-        candidates[_doblon].votes++;
+        candidates[_symbol].souls += _soul;
+        candidates[_symbol].votes++;
         
         souls[msg.sender] = Refund({
             soul: _soul,
-            doblon: _doblon
+            symbol: _symbol
         });
         
-        emit EnvelopeOpen(msg.sender, _soul, _doblon);
+        emit EnvelopeOpen(msg.sender, _soul, _symbol);
     }
     
     
@@ -163,7 +163,7 @@ contract Mayor {
                 _val = souls[voters[i]].soul;
                 souls[voters[i]].soul = 0;
 
-                if (souls[voters[i]].doblon != _mayor) {
+                if (souls[voters[i]].symbol != _mayor) {
                     payable(voters[i]).transfer(_val);
                 }
             }
@@ -184,12 +184,12 @@ contract Mayor {
  
     /// @notice Compute a voting envelope
     /// @param _sigil (uint) The secret sigil of a voter
-    /// @param _doblon (address) The voting preference
+    /// @param _symbol (address) The voting preference
     /// @param _soul (uint) The soul associated to the vote
-    function compute_envelope(uint _sigil, address _doblon, uint _soul) public view returns(bytes32) {
+    function compute_envelope(uint _sigil, address _symbol, uint _soul) public view returns(bytes32) {
         
-        require(candidates[_doblon].isSet, "The candidate specified does not exist");
+        require(candidates[_symbol].isSet, "The candidate specified does not exist");
 
-        return keccak256(abi.encode(_sigil, _doblon, _soul));
+        return keccak256(abi.encode(_sigil, _symbol, _soul));
     }
 }
