@@ -8,6 +8,7 @@ const { assert } = require('chai');
 const truffleAssert = require("truffle-assertions");
 
 const Mayor = artifacts.require("Mayor");
+const Soul = artifacts.require("Soul");
 
 CANVOTE_ERROR_MSG = "Cannot vote now, voting quorum has been reached";
 CANOPEN_ERROR_MSG = "Cannot open an envelope, voting quorum not reached yet";
@@ -20,7 +21,8 @@ CANDIDATE_ERROR_MSG = "The candidate specified does not exist";
 contract("MayorTest", accounts => {
     describe("Test constructor", function() {
         it("Should create correct contract", async function () {
-            const mayor = await Mayor.new(accounts, accounts[1], 0);
+            const mayor = await Mayor.new(accounts, accounts[1], 10);
+            const soulTokens = await Soul.at(await mayor.token());
             console.log("Contract address is " + mayor.address);
 
             const candidate = await mayor.candidates(accounts[3]);
@@ -28,6 +30,9 @@ contract("MayorTest", accounts => {
 
             const escrow = await mayor.escrow();
             assert.equal(escrow, accounts[1], "Escrow address is " + escrow);
+
+            const balance = await soulTokens.balanceOf(mayor.address);
+            assert.equal(balance, 10 * 100, "Token balance is " + balance);
         });
     });
 
@@ -73,6 +78,8 @@ contract("MayorTest", accounts => {
 
         it("Should cast envelope because quorum is not reached", async function () {
             const mayor = await Mayor.new(accounts, accounts[1], 5);
+            const soulTokens = await Soul.at(await mayor.token());
+
             console.log("Contract address is " + mayor.address);
 
             sigil = Math.floor(Math.random() * 100);
@@ -83,6 +90,12 @@ contract("MayorTest", accounts => {
             truffleAssert.eventEmitted(res, "EnvelopeCast", (event) => {
                 return event._voter === accounts[2];
             });
+
+            const balance = await soulTokens.balanceOf(accounts[2]);
+            assert.equal(balance, 100, "Token balance is " + balance);
+
+            const contractBalance = await soulTokens.balanceOf(mayor.address);
+            assert.equal(contractBalance, 4 * 100, "Contract balance is " + contractBalance);
         });
     });
 
@@ -97,7 +110,7 @@ contract("MayorTest", accounts => {
 
             await mayor.cast_envelope(envelope, {from: accounts[2]});
 
-            const res = await mayor.open_envelope(sigil, accounts[2], {from: accounts[2]}).should.be.rejectedWith(CANOPEN_ERROR_MSG);
+            await mayor.open_envelope(sigil, accounts[2], 50, {from: accounts[2]}).should.be.rejectedWith(CANOPEN_ERROR_MSG);
         });
 
         it("Should not open the envelope because the address has not casted yet", async function () {
@@ -107,7 +120,7 @@ contract("MayorTest", accounts => {
             sigil = Math.floor(Math.random() * 100);
             envelope = await mayor.compute_envelope(sigil, accounts[2], 50);
 
-            const res = await mayor.open_envelope(sigil, accounts[2], {from: accounts[2]}).should.be.rejectedWith(NOTCASTED_ERROR_MSG);
+            await mayor.open_envelope(sigil, accounts[2], 50, {from: accounts[2]}).should.be.rejectedWith(NOTCASTED_ERROR_MSG);
         });
 
         it("Should not open the envelope because it is not equal to the one casted", async function () {
@@ -119,11 +132,13 @@ contract("MayorTest", accounts => {
 
             await mayor.cast_envelope(envelope, {from: accounts[2]});
 
-            const res = await mayor.open_envelope(1234, accounts[4], {from: accounts[2]}).should.be.rejectedWith(WRONGENV_ERROR_MSG);
+            await mayor.open_envelope(1234, accounts[4], 50, {from: accounts[2]}).should.be.rejectedWith(WRONGENV_ERROR_MSG);
         });
 
         it("Should increase souls, emit the event, increase the balance of contract", async function () {
             const mayor = await Mayor.new(accounts, accounts[1], 1);
+            const soulTokens = await Soul.at(await mayor.token());
+            
             console.log("Contract address is " + mayor.address);
 
             const sigil = Math.floor(Math.random() * 100);
@@ -131,23 +146,14 @@ contract("MayorTest", accounts => {
 
             await mayor.cast_envelope(envelope, {from: accounts[2]});
 
-            const balanceVoterBefore = await web3.eth.getBalance(accounts[2]); 
-            const receipt = await mayor.open_envelope(sigil, accounts[2], {from: accounts[2], value: 50});
-            const balanceVoterAfter = await web3.eth.getBalance(accounts[2]);
+            const balanceVoterBefore = await soulTokens.balanceOf(accounts[2]);
+            const result = await soulTokens.approve(mayor.address, 50, {from: accounts[2]});
 
-            console.log(receipt.receipt);
+            assert(result, "Approval failed");
+            const receipt = await mayor.open_envelope(sigil, accounts[2], 50, {from: accounts[2]});
+            const balanceVoterAfter = await soulTokens.balanceOf(accounts[2]);
 
-            const gasUsed = receipt.receipt.gasUsed;
-            const tx = await web3.eth.getTransaction(receipt.tx);
-            const gasTotalPrice = parseInt(tx.gasPrice) * gasUsed;
-
-            console.log(tx);
-
-            console.log("BalanceVoterBefore " + balanceVoterBefore);
-            console.log("Total gas cost " + gasTotalPrice);
-            console.log("BalanceVoterAfter " + balanceVoterAfter);
-
-            assert(BigInt(balanceVoterAfter) + BigInt(gasTotalPrice) + BigInt(50) == BigInt(balanceVoterBefore), "Must be equal");
+            assert.equal(parseInt(balanceVoterAfter) + 50, balanceVoterBefore, "Must be equal");
 
             truffleAssert.eventEmitted(receipt, "EnvelopeOpen", (event) => {
                 return event._voter === accounts[2] && event._soul == 50 && event._symbol == accounts[2];
@@ -156,12 +162,11 @@ contract("MayorTest", accounts => {
             assert.equal(accumulatedVote.souls, 50, "The souls are " + accumulatedVote.souls);
             assert.equal(accumulatedVote.votes, 1, "The votes are " + accumulatedVote.votes);
 
-            const mayorBalance = await web3.eth.getBalance(mayor.address);
+            const mayorBalance = await soulTokens.balanceOf(mayor.address);
             assert.equal(mayorBalance, 50, "Mayor balance is " + mayorBalance);
         });
     });
 
-    
     describe("Test mayor_or_sayonara", function() {
         it("Should not declare the mayor because not all envelopes are opened", async function () {
             const mayor = await Mayor.new(accounts, accounts[1], 1);
@@ -178,6 +183,8 @@ contract("MayorTest", accounts => {
         
         it("Should elect the candidate and update its balance", async function () {
             const mayor = await Mayor.new(accounts, accounts[1], 3);
+            const soulTokens = await Soul.at(await mayor.token());
+
             console.log("Contract address is " + mayor.address);
 
             const sigilVoter1 = Math.floor(Math.random() * 100);
@@ -191,22 +198,27 @@ contract("MayorTest", accounts => {
             const sigilLoser = Math.floor(Math.random() * 100);
             const envelopeLoser = await mayor.compute_envelope(sigilLoser, accounts[3], 100);
             await mayor.cast_envelope(envelopeLoser, {from: accounts[4]});
+            
+            await soulTokens.approve(mayor.address, 100, {from: accounts[2]});
+            await mayor.open_envelope(sigilVoter1, accounts[2], 100, {from: accounts[2]});
+            await soulTokens.approve(mayor.address, 100, {from: accounts[3]});
+            await mayor.open_envelope(sigilVoter2, accounts[2], 100, {from: accounts[3]});
+            await soulTokens.approve(mayor.address, 100, {from: accounts[4]});
+            await mayor.open_envelope(sigilLoser, accounts[3], 100, {from: accounts[4]});
 
-            await mayor.open_envelope(sigilVoter1, accounts[2], {from: accounts[2], value: 100});
-            await mayor.open_envelope(sigilVoter2, accounts[2], {from: accounts[3], value: 100});
-            await mayor.open_envelope(sigilLoser, accounts[3], {from: accounts[4], value: 100});
-
+            var mayorBalance = await soulTokens.balanceOf(mayor.address); 
+            assert.equal(mayorBalance, 300);
             const cr = await mayor.candidates(accounts[2]);
             assert.equal(cr.votes, 2, "Must be equal");
             assert.equal(cr.souls, 200, "Must be equal");
 
-            const balanceEscrowBefore = await web3.eth.getBalance(accounts[1]); 
-            const balanceLoserBefore = await web3.eth.getBalance(accounts[4]); 
-            const balanceCandidateBefore = await web3.eth.getBalance(accounts[2]); 
+            const balanceEscrowBefore = await soulTokens.balanceOf(accounts[1]); 
+            const balanceLoserBefore = await soulTokens.balanceOf(accounts[4]); 
+            const balanceCandidateBefore = await soulTokens.balanceOf(accounts[2]); 
             const receipt = await mayor.mayor_or_sayonara({from: accounts[0]});
-            const balanceCandidateAfter = await web3.eth.getBalance(accounts[2]);
-            const balanceLoserAfter = await web3.eth.getBalance(accounts[4]);
-            const balanceEscrowAfter = await web3.eth.getBalance(accounts[1]); 
+            const balanceCandidateAfter = await soulTokens.balanceOf(accounts[2]);
+            const balanceLoserAfter = await soulTokens.balanceOf(accounts[4]);
+            const balanceEscrowAfter = await soulTokens.balanceOf(accounts[1]); 
             
             console.log("BalanceEscrowBefore " + balanceEscrowBefore);
             console.log("BalanceEscrowAfter " + balanceEscrowAfter);
@@ -217,65 +229,71 @@ contract("MayorTest", accounts => {
             console.log("BalanceCandidateBefore " + balanceCandidateBefore);
             console.log("BalanceCandidateAfter " + balanceCandidateAfter);
 
-            assert.equal(balanceEscrowAfter, balanceEscrowBefore, "Must be equal");
-            assert(BigInt(balanceCandidateAfter) - BigInt(200) == BigInt(balanceCandidateBefore), "Must be equal");
-            assert(BigInt(balanceLoserAfter) - BigInt(100) == BigInt(balanceLoserBefore), "Must be equal");
+            assert.equal(parseInt(balanceEscrowAfter), parseInt(balanceEscrowBefore), "Must be equal");
+            assert.equal(parseInt(balanceCandidateAfter) - 200, balanceCandidateBefore, "Must be equal");
+            assert.equal(parseInt(balanceLoserAfter) - 100, balanceLoserBefore, "Must be equal");
 
             truffleAssert.eventEmitted(receipt, "NewMayor", (event) => {
                 return event._candidate === accounts[2];
             });
 
-            const mayorBalance = await web3.eth.getBalance(mayor.address);
+            mayorBalance = await soulTokens.balanceOf(mayor.address);
             assert.equal(mayorBalance, 0, "Mayor balance is " + mayorBalance);
         });
 
         
         it("Should be tie and update escrow", async function () {
             const mayor = await Mayor.new(accounts, accounts[1], 4);
+            const soulTokens = await Soul.at(await mayor.token());
             console.log("Contract address is " + mayor.address);
 
             const sigilVoter1 = Math.floor(Math.random() * 100);
-            const envelopeVoter1 = await mayor.compute_envelope(sigilVoter1, accounts[2], 100);
+            const envelopeVoter1 = await mayor.compute_envelope(sigilVoter1, accounts[2], 50);
             await mayor.cast_envelope(envelopeVoter1, {from: accounts[2]});
 
             const sigilVoter2 = Math.floor(Math.random() * 100);
-            const envelopeVoter2 = await mayor.compute_envelope(sigilVoter2, accounts[3], 100);
+            const envelopeVoter2 = await mayor.compute_envelope(sigilVoter2, accounts[3], 50);
             await mayor.cast_envelope(envelopeVoter2, {from: accounts[3]});
 
             const sigilVoter3 = Math.floor(Math.random() * 100);
-            const envelopeVoter3 = await mayor.compute_envelope(sigilVoter3, accounts[4], 200);
+            const envelopeVoter3 = await mayor.compute_envelope(sigilVoter3, accounts[4], 100);
             await mayor.cast_envelope(envelopeVoter3, {from: accounts[4]});
 
             const sigilVoter4 = Math.floor(Math.random() * 100);
-            const envelopeVoter4 = await mayor.compute_envelope(sigilVoter4, accounts[5], 200);
+            const envelopeVoter4 = await mayor.compute_envelope(sigilVoter4, accounts[5], 100);
             await mayor.cast_envelope(envelopeVoter4, {from: accounts[5]});
  
-            await mayor.open_envelope(sigilVoter1, accounts[2], {from: accounts[2], value: 100});
-            await mayor.open_envelope(sigilVoter2, accounts[3], {from: accounts[3], value: 100});
-            await mayor.open_envelope(sigilVoter3, accounts[4], {from: accounts[4], value: 200});
-            await mayor.open_envelope(sigilVoter4, accounts[5], {from: accounts[5], value: 200});
+            await soulTokens.approve(mayor.address, 50, {from: accounts[2]});
+            await mayor.open_envelope(sigilVoter1, accounts[2], 50, {from: accounts[2]});
+            await soulTokens.approve(mayor.address, 50, {from: accounts[3]});
+            await mayor.open_envelope(sigilVoter2, accounts[3], 50, {from: accounts[3]});
+            await soulTokens.approve(mayor.address, 100, {from: accounts[4]});
+            await mayor.open_envelope(sigilVoter3, accounts[4], 100, {from: accounts[4]});
+            await soulTokens.approve(mayor.address, 100, {from: accounts[5]});
+            await mayor.open_envelope(sigilVoter4, accounts[5], 100, {from: accounts[5]});
 
-            const balanceEscrowBefore = await web3.eth.getBalance(accounts[1]);
+            const balanceEscrowBefore = await soulTokens.balanceOf(accounts[1]);
             const receipt = await mayor.mayor_or_sayonara({from: accounts[0]});
-            const balanceEscrowAfter = await web3.eth.getBalance(accounts[1]); 
+            const balanceEscrowAfter = await soulTokens.balanceOf(accounts[1]); 
 
             console.log("BalanceEscrowBefore " + balanceEscrowBefore);
             console.log("BalanceEscrowAfter " + balanceEscrowAfter);
 
-            assert((BigInt(balanceEscrowAfter) - BigInt(600)) == BigInt(balanceEscrowBefore), "Must be equal");
+            assert.equal(balanceEscrowAfter - 300, balanceEscrowBefore, "Must be equal");
             
             console.log("Escrow address " + accounts[1]);
             truffleAssert.eventEmitted(receipt, "Tie", (event) => {
                 return event._escrow === accounts[1];
             });
             
-            const mayorBalance = await web3.eth.getBalance(mayor.address);
+            const mayorBalance = await soulTokens.balanceOf(mayor.address);
             assert.equal(mayorBalance, 0, "Mayor balance is " + mayorBalance);
         });
 
         
         it("Should not repeat the mayor_or_sayonara", async function () {
             const mayor = await Mayor.new(accounts, accounts[1], 3);
+            const soulTokens = await Soul.at(await mayor.token());
             console.log("Contract address is " + mayor.address);
 
             const sigilVoter1 = Math.floor(Math.random() * 100);
@@ -290,13 +308,17 @@ contract("MayorTest", accounts => {
             const envelopeLoser = await mayor.compute_envelope(sigilLoser, accounts[3], 100);
             await mayor.cast_envelope(envelopeLoser, {from: accounts[4]});
 
-            await mayor.open_envelope(sigilVoter1, accounts[2], {from: accounts[2], value: 100});
-            await mayor.open_envelope(sigilVoter2, accounts[2], {from: accounts[3], value: 100});
-            await mayor.open_envelope(sigilLoser, accounts[3], {from: accounts[4], value: 100});
+            await soulTokens.approve(mayor.address, 100, {from: accounts[2]});
+            await mayor.open_envelope(sigilVoter1, accounts[2], 100, {from: accounts[2]});
+            await soulTokens.approve(mayor.address, 100, {from: accounts[3]});
+            await mayor.open_envelope(sigilVoter2, accounts[2], 100, {from: accounts[3]});
+            await soulTokens.approve(mayor.address, 100, {from: accounts[4]});
+            await mayor.open_envelope(sigilLoser, accounts[3], 100, {from: accounts[4]});
 
             await mayor.mayor_or_sayonara({from: accounts[0]});
 
             await mayor.mayor_or_sayonara({from: accounts[0]}).should.be.rejectedWith(PROTODONE_ERROR_MSG);
         });
-    });
+        
+    }); 
 });

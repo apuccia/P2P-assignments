@@ -2,6 +2,8 @@
 
 pragma solidity 0.8.1;
 
+import "./soul.sol";
+
 contract Mayor {
     
     // Structs, events, and modifiers
@@ -56,8 +58,9 @@ contract Mayor {
     
     // State attributes
     
+    Soul public token;
+
     // Initialization variables
-    // uint are the s
     mapping (address => AccumulatedVote) public candidates;
     address payable[] candidatesAddresses;
     address payable public escrow;
@@ -85,6 +88,8 @@ contract Mayor {
         }
         escrow = _escrow;
         voting_condition = Conditions({quorum: _quorum, envelopes_casted: 0, envelopes_opened: 0});
+
+        token = new Soul(address(this), _quorum);
     }
 
     
@@ -95,6 +100,8 @@ contract Mayor {
             voting_condition.envelopes_casted++;
 
         envelopes[msg.sender] = _envelope;
+        token.transfer(msg.sender, 100);
+
         emit EnvelopeCast(msg.sender);
     }
     
@@ -102,9 +109,10 @@ contract Mayor {
     /// @notice Open an envelope and store the vote information
     /// @param _sigil (uint) The secret sigil of a voter
     /// @param _symbol (address) The voting preference
-    /// @dev The soul is sent as crypto
+    /// @param _souls (uint) Amount of souls to transfer
+    /// @dev The soul is sent as ERC20 token
     /// @dev Need to recompute the hash to validate the envelope previously casted
-    function open_envelope(uint _sigil, address _symbol) canOpen public payable {
+    function open_envelope(uint _sigil, address _symbol, uint _souls) canOpen public {
         
         // TODO Complete this function
 
@@ -112,22 +120,22 @@ contract Mayor {
         
         bytes32 _casted_envelope = envelopes[msg.sender];
         
-        uint _soul = msg.value;
-        bytes32 _sent_envelope = compute_envelope(_sigil, _symbol, _soul);
+        bytes32 _sent_envelope = compute_envelope(_sigil, _symbol, _souls);
 
         require(_casted_envelope == _sent_envelope, "Sent envelope does not correspond to the one casted");
         
         voting_condition.envelopes_opened++;
         voters.push(msg.sender);
-        candidates[_symbol].souls += _soul;
+        candidates[_symbol].souls += _souls;
         candidates[_symbol].votes++;
+        token.transferFrom(msg.sender, address(this), _souls);
         
         souls[msg.sender] = Refund({
-            soul: _soul,
+            soul: _souls,
             symbol: _symbol
         });
         
-        emit EnvelopeOpen(msg.sender, _soul, _symbol);
+        emit EnvelopeOpen(msg.sender, _souls, _symbol);
     }
     
     
@@ -164,17 +172,17 @@ contract Mayor {
                 souls[voters[i]].soul = 0;
 
                 if (souls[voters[i]].symbol != _mayor) {
-                    payable(voters[i]).transfer(_val);
+                    token.transfer(voters[i], _val);
                 }
             }
 
             protocolEnded = true;
-            _mayor.transfer(_soulsToMayor);
+            token.transfer(_mayor, _soulsToMayor);
             emit NewMayor(_mayor);
         }
         else{
             protocolEnded = true;
-            escrow.transfer(_soulsToEscrow);
+            token.transfer(escrow, _soulsToEscrow);
             emit Tie(escrow);
         }
             // emit the NewMayor() event if the candidate is confirmed as mayor
