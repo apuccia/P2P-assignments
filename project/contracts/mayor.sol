@@ -96,11 +96,12 @@ contract Mayor {
     /// @notice Store a received voting envelope
     /// @param _envelope The envelope represented as the keccak256 hash of (sigil, symbol, soul) 
     function cast_envelope(bytes32 _envelope) canVote public {
-        if(envelopes[msg.sender] == 0x0) // => NEW, update on 17/05/2021
+        if(envelopes[msg.sender] == 0x0) { // => NEW, update on 17/05/2021
             voting_condition.envelopes_casted++;
+            token.transfer(msg.sender, 100);
+        }
 
         envelopes[msg.sender] = _envelope;
-        token.transfer(msg.sender, 100);
 
         emit EnvelopeCast(msg.sender);
     }
