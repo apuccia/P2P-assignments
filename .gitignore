@@ -6,4 +6,5 @@ plots
 *.log
 
 build
+node_modules
 *.txt
