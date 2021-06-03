@@ -97,6 +97,22 @@ contract("MayorTest", accounts => {
             const contractBalance = await soulTokens.balanceOf(mayor.address);
             assert.equal(contractBalance, 4 * 100, "Contract balance is " + contractBalance);
         });
+
+        it("A voter should not receive more than 100 tokens by casting multiple envelopes", async function () {
+            const mayor = await Mayor.new(accounts, accounts[1], 5);
+            const soulTokens = await Soul.at(await mayor.token());
+
+            console.log("Contract address is " + mayor.address);
+
+            sigil = Math.floor(Math.random() * 100);
+            envelope = await mayor.compute_envelope(sigil, accounts[3], 50);
+
+            await mayor.cast_envelope(envelope, {from: accounts[2]});
+            await mayor.cast_envelope(envelope, {from: accounts[2]});
+
+            const balance = await soulTokens.balanceOf(accounts[2]);
+            assert.equal(balance, 100, "Token balance is " + balance);
+        });
     });
 
     
