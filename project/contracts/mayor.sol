@@ -136,6 +136,8 @@ contract Mayor {
         });
         
         emit EnvelopeOpen(msg.sender, _souls, _symbol);
+
+        envelopes[msg.sender] = 0x0;
     }
     
     

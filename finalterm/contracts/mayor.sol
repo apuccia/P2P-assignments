@@ -129,6 +129,8 @@ contract Mayor {
             doblon: _doblon
         });
         
+        envelopes[msg.sender] = 0x0;
+
         emit EnvelopeOpen(msg.sender, _soul, _doblon);
     }
     

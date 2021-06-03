@@ -181,6 +181,20 @@ contract("MayorTest", accounts => {
             const mayorBalance = await web3.eth.getBalance(mayor.address);
             assert.equal(mayorBalance, 1000, "Mayor balance is " + mayorBalance);
         });
+
+        it("Should not open the same envelope multiple times", async function() {
+            const mayor = await Mayor.new(accounts[0], accounts[1], 1);
+            console.log("Contract address is " + mayor.address);
+
+            const sigil = Math.floor(Math.random() * 100);
+            const envelope = await mayor.compute_envelope(sigil, true, 50);
+
+            await mayor.cast_envelope(envelope, {from: accounts[2]});
+ 
+            await mayor.open_envelope(sigil, true, {from: accounts[2], value: 50});
+
+            await mayor.open_envelope(sigil, true, {from: accounts[2], value: 50}).should.be.rejectedWith(NOTCASTED_ERROR_MSG);
+        });
     });
 
     describe("Test mayor_or_sayonara", function() {

@@ -165,6 +165,24 @@ contract("MayorTest", accounts => {
             const mayorBalance = await soulTokens.balanceOf(mayor.address);
             assert.equal(mayorBalance, 50, "Mayor balance is " + mayorBalance);
         });
+
+        it("Should not open the same envelope multiple times", async function () {
+            const mayor = await Mayor.new(accounts, accounts[1], 1);
+            const soulTokens = await Soul.at(await mayor.token());
+            
+            console.log("Contract address is " + mayor.address);
+
+            const sigil = Math.floor(Math.random() * 100);
+            const envelope = await mayor.compute_envelope(sigil, accounts[2], 50);
+
+            await mayor.cast_envelope(envelope, {from: accounts[2]});
+
+            await soulTokens.approve(mayor.address, 50, {from: accounts[2]});
+
+            await mayor.open_envelope(sigil, accounts[2], 50, {from: accounts[2]});
+
+            await mayor.open_envelope(sigil, accounts[2], 50, {from: accounts[2]}).should.be.rejectedWith(NOTCASTED_ERROR_MSG);;
+        });
     });
 
     describe("Test mayor_or_sayonara", function() {
