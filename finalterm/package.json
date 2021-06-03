@@ -1,0 +1,19 @@
+{
+  "name": "finalterm",
+  "version": "1.0.0",
+  "description": "finalterm for p2p",
+  "main": "truffle-config.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Alessandro Puccia",
+  "license": "ISC",
+  "dependencies": {
+    "chai": "^4.3.4",
+    "chai-as-promised": "^7.1.1",
+    "truffle-assertions": "^0.9.2"
+  }
+}
