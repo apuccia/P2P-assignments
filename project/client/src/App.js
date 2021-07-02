@@ -1,42 +1,121 @@
-import logo from './logo.svg';
 import './App.css';
 import React, { Component } from 'react'
+import { DrizzleContext } from "@drizzle/react-plugin";
+import { Drizzle } from "@drizzle/store";
 import ReadCandidates from "./components/ReadCandidates";
+import PropTypes from 'prop-types';
+import { makeStyles } from '@material-ui/core/styles';
+import AppBar from '@material-ui/core/AppBar';
+import Tabs from '@material-ui/core/Tabs';
+import Tab from '@material-ui/core/Tab';
+import Typography from '@material-ui/core/Typography';
+import Box from '@material-ui/core/Box';
 
-class App extends Component {
-  state = { loading: true, drizzleState: null };
+// import drizzle functions and contract artifact
+import Mayor from "./contracts/Mayor.json";
 
-  componentDidMount() {
-    const { drizzle } = this.props;
+// let drizzle know what contracts we want and how to access our test blockchain
+const options = {
+  contracts: [Mayor],
+  web3: {
+    fallback: {
+      type: "ws",
+      url: "ws:localhost:9545",
+    },
+  },
+};
 
-    // subscribe to changes in the store
-    this.unsubscribe = drizzle.store.subscribe(() => {
+// setup the drizzle store and drizzle
+const drizzle = new Drizzle(options);
 
-      // every time the store updates, grab the state from drizzle
-      const drizzleState = drizzle.store.getState();
+function TabPanel(props) {
+  const { children, value, index, ...other } = props;
 
-      // check to see if it's ready, if so, update local component state
-      if (drizzleState.drizzleStatus.initialized) {
-        this.setState({ loading: false, drizzleState });
-      }
-    });
-  }
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`simple-tabpanel-${index}`}
+      aria-labelledby={`simple-tab-${index}`}
+      {...other}
+    >
+      {value === index && (
+        <Box p={3}>
+          <Typography component={'span'} >{children}</Typography>
+        </Box>
+      )}
+    </div>
+  );
+}
 
-  componentWillUnmount() {
-    this.unsubscribe();
-  }
+TabPanel.propTypes = {
+  children: PropTypes.node,
+  index: PropTypes.any.isRequired,
+  value: PropTypes.any.isRequired,
+};
 
-  render() {
-    if (this.state.loading) return "Loading Drizzle...";
-    return (
-      <div className="App">
-        <ReadCandidates
-          drizzle={this.props.drizzle}
-          drizzleState={this.state.drizzleState}
-        />
-      </div>
-    );
-  }
+function a11yProps(index) {
+  return {
+    id: `simple-tab-${index}`,
+    'aria-controls': `simple-tabpanel-${index}`,
+  };
+}
+
+const useStyles = makeStyles((theme) => ({
+  root: {
+    flexGrow: 1,
+    backgroundColor: theme.palette.background.paper,
+  },
+}));
+
+const SimpleTabs = (props) => {
+  const classes = useStyles();
+  const [value, setValue] = React.useState(0);
+
+  const handleChange = (event, newValue) => {
+    setValue(newValue);
+  };
+
+  return (
+    <div className={classes.root}>
+      <AppBar position="static">
+        <Tabs value={value} onChange={handleChange} aria-label="simple tabs example">
+          <Tab label="Item One" {...a11yProps(0)} />
+          <Tab label="Item Two" {...a11yProps(1)} />
+          <Tab label="Item Three" {...a11yProps(2)} />
+        </Tabs>
+      </AppBar>
+      <TabPanel value={value} index={0}>
+        <ReadCandidates drizzle={props.drizzle} drizzleState={props.drizzleState} />
+      </TabPanel>
+      <TabPanel value={value} index={1}>
+        Item Two
+      </TabPanel>
+      <TabPanel value={value} index={2}>
+        Item Three
+      </TabPanel>
+    </div>
+  );
+}
+
+const App = () => {
+
+  return (
+    <DrizzleContext.Provider drizzle={drizzle}>
+      <DrizzleContext.Consumer>
+        {drizzleContext => {
+          const { drizzle, drizzleState, initialized } = drizzleContext;
+
+          if (!initialized) {
+            return "Loading..."
+          }
+
+          return (
+            <SimpleTabs drizzle={drizzle} drizzleState={drizzleState} />
+          )
+        }}
+      </DrizzleContext.Consumer>
+    </DrizzleContext.Provider>);
 }
 
 export default App;
