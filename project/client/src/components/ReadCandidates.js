@@ -1,4 +1,9 @@
 import React from "react";
+import Candidate from "./Candidate";
+import Grid from '@material-ui/core/Grid';
+
+import cand1 from '../media/cand1.png'
+import cand2 from '../media/cand2.png'
 
 class ReadCandidates extends React.Component {
   state = { dataKey: null };
@@ -8,9 +13,8 @@ class ReadCandidates extends React.Component {
     const contract = drizzle.contracts.Mayor;
 
     const candidates = contract.methods["get_candidates"].cacheCall()
-    const escrow = contract.methods["escrow"].cacheCall()
 
-    this.setState({ candidates, escrow });
+    this.setState({ candidates });
   }
 
   render() {
@@ -19,15 +23,17 @@ class ReadCandidates extends React.Component {
 
     // using the saved `dataKey`, get the variable we're interested in
     const candidates = Mayor.get_candidates[this.state.candidates];
-    const escrow = Mayor.escrow[this.state.escrow];
 
     // if it exists, then we display its value
     return (
-      <div>
-        <p>Candidate 1: {candidates && candidates.value[0]}</p>
-        <p>Candidate 2: {candidates && candidates.value[1]}</p>
-        <p>Escrow account: {escrow && escrow.value}</p>
-      </div>
+      <Grid container spacing={10}>
+        <Grid item md={3}>
+          <Candidate name="asdf" slogan="asdfasdf" imgloc={cand1} address={candidates && candidates.value[0]} />
+        </Grid>
+        <Grid item md={3}>
+          <Candidate name="pippus" slogan="asdfasdf" imgloc={cand2} address={candidates && candidates.value[1]} />
+        </Grid>
+      </Grid>
     );
   }
 }
