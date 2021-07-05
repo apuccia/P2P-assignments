@@ -24,6 +24,8 @@ class ReadCandidates extends React.Component {
     // using the saved `dataKey`, get the variable we're interested in
     const candidates = Mayor.get_candidates[this.state.candidates];
 
+
+    console.log(candidates);
     // if it exists, then we display its value
     return (
       <Grid container spacing={10}>

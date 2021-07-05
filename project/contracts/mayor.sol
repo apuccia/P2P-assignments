@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 
-pragma solidity 0.8.1;
+pragma solidity 0.5.0;
 
 import "./soul.sol";
 
@@ -93,10 +93,10 @@ contract Mayor {
         address[] memory _candidates,
         address payable _escrow,
         uint32 _quorum
-    ) {
+    ) public {
         for (uint32 i = 0; i < _candidates.length; i++) {
             candidates[_candidates[i]] = AccumulatedVote(true, 0, 0);
-            candidatesAddresses.push(payable(_candidates[i]));
+            candidatesAddresses.push(address(uint160(_candidates[i])));
         }
         escrow = _escrow;
         voting_condition = Conditions({
