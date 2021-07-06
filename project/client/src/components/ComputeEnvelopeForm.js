@@ -2,6 +2,10 @@ import TextField from '@material-ui/core/TextField';
 import Button from '@material-ui/core/Button';
 import React from "react";
 import { withStyles } from "@material-ui/core/styles";
+import Typography from '@material-ui/core/Typography';
+
+import { ToastContainer } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
 
 const styles = theme => ({
   root: {
@@ -13,7 +17,7 @@ const styles = theme => ({
 
     '& .MuiTextField-root': {
       margin: theme.spacing(1),
-      width: '300px',
+      width: '500px',
     },
     '& .MuiButtonBase-root': {
       margin: theme.spacing(2),
@@ -22,33 +26,93 @@ const styles = theme => ({
 });
 
 class ComputeEnvelopeForm extends React.Component {
-  handleSubmit = e => {
+  state = { dataKey: null };
+
+  handleCompute = e => {
     this.callComputeEnvelope(this.state.sygil, this.state.symbol, this.state.soul);
+  }
+
+  handleCast = e => {
+    this.callCastEnvelope();
   }
 
   callComputeEnvelope = (sygil, symbol, soul) => {
     const { drizzle, drizzleState } = this.props;
     const contract = drizzle.contracts.Mayor;
 
-    const stackId = contract.methods["compute_envelope"].cacheSend(sygil, symbol, soul);
+    const dataKey = contract.methods["compute_envelope"].cacheCall(sygil, symbol, soul, { from: drizzleState.accounts[0] });
+
+    this.setState({ dataKey });
+
+    this.showEnvelope();
+  };
+
+  callCastEnvelope = () => {
+    const { drizzle, drizzleState } = this.props;
+    const contract = drizzle.contracts.Mayor;
+
+    const stackId = contract.methods["cast_envelope"].cacheSend(this.state.dataKey, { from: drizzleState.accounts[0] });
 
     this.setState({ stackId });
   };
+
+  getResult = () => {
+    // get the transaction states from the drizzle state
+    const { transactions, transactionStack } = this.props.drizzleState;
+    // get the transaction hash using our saved `stackId`
+    var txHash = transactionStack[this.state.stackId];
+
+    // if transaction hash does not exist, don't display anything
+    if (!txHash || transactions[txHash] == null) return null;
+
+    if (transactions[txHash] != null && transactions[txHash].status === "error") {
+      transactions[txHash] = null;
+
+      return null;
+    }
+
+    return (
+      <Typography variant="h6" color="textPrimary" component="p">
+        Envelope Casted! Remember to save the <b>sygil</b> in order to open it later!
+      </Typography>
+    );
+  }
+
+  showEnvelope = () => {
+    const { classes } = this.props;
+    const { Mayor } = this.props.drizzleState.contracts;
+
+    if (this.state.dataKey == null) {
+      return null;
+    }
+
+    // using the saved `dataKey`, get the variable we're interested in
+    const envelope = Mayor.compute_envelope[this.state.dataKey];
+
+    return (
+      <Typography variant="h6" color="textPrimary" component="p">
+        Your envelope is {envelope && envelope.value}
+      </Typography>
+    );
+  }
 
   render() {
     const { classes } = this.props;
 
     return (
       <div>
-        <form className={classes.root} onSubmit={this.handleSubmit}>
+        <ToastContainer style={{ width: "600px" }} />
+        <form className={classes.root}>
           <TextField
             label="Sygil"
             variant="filled"
+            type="integer"
             required
             onChange={e => this.setState({
               sygil: e.target.value
             })}
           />
+          {/* TODO: change to select */}
           <TextField
             label="Symbol"
             variant="filled"
@@ -60,7 +124,7 @@ class ComputeEnvelopeForm extends React.Component {
           <TextField
             label="Soul"
             variant="filled"
-            type="email"
+            type="integer"
             required
             onChange={e => this.setState({
               soul: e.target.value
@@ -70,12 +134,25 @@ class ComputeEnvelopeForm extends React.Component {
             <Button variant="contained">
               Cancel
             </Button>
-            <Button type="submit" variant="contained" color="primary">
+            <Button type="button" variant="contained" color="primary" onClick={this.handleCompute}>
               Compute
             </Button>
           </div>
         </form>
-      </div >
+
+        {this.state.dataKey != null ?
+          <div className={classes.root}>
+            {this.showEnvelope()}
+            < Button type="button" variant="contained" color="primary" onClick={this.handleCast}>
+              Cast
+            </Button>
+          </div> : <div></div>
+        }
+
+        <div className={classes.root}>
+          {this.getResult()}
+        </div>
+      </div>
     );
   }
 };

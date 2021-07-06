@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { makeStyles } from '@material-ui/core/styles';
 import Card from '@material-ui/core/Card';
 import CardContent from '@material-ui/core/CardContent';
@@ -18,7 +19,7 @@ const useStyles = makeStyles({
 
 export default function Candidate(props) {
     const classes = useStyles();
-    console.log(props.imgloc);
+
     return (
         <Card className={classes.root}>
             <CardHeader
@@ -30,7 +31,7 @@ export default function Candidate(props) {
                 title={props.name}
             />
             <CardContent>
-                <Typography variant="h7" color="textPrimary" component="p">
+                <Typography variant="h6" color="textPrimary" component="p">
                     {props.slogan}
                 </Typography>
                 <Typography variant="body2" color="textSecondary" component="p">

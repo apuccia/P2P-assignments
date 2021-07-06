@@ -1,5 +1,4 @@
 import React from 'react'
-import ReadCandidates from "./ReadCandidates";
 import PropTypes from 'prop-types';
 import { makeStyles } from '@material-ui/core/styles';
 import AppBar from '@material-ui/core/AppBar';
@@ -11,10 +10,12 @@ import Box from '@material-ui/core/Box';
 import Toolbar from '@material-ui/core/Toolbar';
 import IconButton from '@material-ui/core/IconButton';
 import MenuIcon from '@material-ui/icons/Menu';
-
 import Menu from '@material-ui/core/Menu';
 import MenuItem from '@material-ui/core/MenuItem';
+
 import ComputeEnvelopeForm from './ComputeEnvelopeForm';
+import OpenEnvelopeForm from './OpenEnvelopeForm';
+import ReadCandidates from "./ReadCandidates";
 
 function TabPanel(props) {
     const { children, value, index, ...other } = props;
@@ -62,10 +63,12 @@ function SimpleTabs(props) {
     const [anchorEl, setAnchorEl] = React.useState(null);
 
     const [computeEnvelope, setComputeEnvelope] = React.useState(false);
+    const [openEnvelope, setOpenEnvelope] = React.useState(false);
 
     const handleChange = (event, newValue) => {
         setValue(newValue);
         setComputeEnvelope(false);
+        setOpenEnvelope(false);
     };
 
     const handleClick = (event) => {
@@ -79,13 +82,15 @@ function SimpleTabs(props) {
     const handleComputeEnvelope = () => {
         setAnchorEl(null);
         setComputeEnvelope(true);
-        setValue(-1);
+        setOpenEnvelope(false);
+        setValue(false);
     };
 
     const handleOpenEnvelope = () => {
         setComputeEnvelope(false);
+        setOpenEnvelope(true);
         setAnchorEl(null);
-        setValue(-1);
+        setValue(false);
     };
 
     return (
@@ -131,7 +136,7 @@ function SimpleTabs(props) {
             </TabPanel>
 
             {computeEnvelope ? <ComputeEnvelopeForm drizzle={props.drizzle} drizzleState={props.drizzleState} /> : <div></div>}
-
+            {openEnvelope ? <OpenEnvelopeForm drizzle={props.drizzle} drizzleState={props.drizzleState} /> : <div></div>}
 
         </div>
     );

@@ -1,7 +1,7 @@
 import React from "react";
-import Candidate from "./Candidate";
 import Grid from '@material-ui/core/Grid';
 
+import Candidate from "./Candidate";
 import cand1 from '../media/cand1.png'
 import cand2 from '../media/cand2.png'
 
