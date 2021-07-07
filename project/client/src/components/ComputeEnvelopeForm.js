@@ -4,9 +4,6 @@ import React from "react";
 import { withStyles } from "@material-ui/core/styles";
 import Typography from "@material-ui/core/Typography";
 
-import { ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-
 const styles = (theme) => ({
   root: {
     display: "flex",
@@ -117,7 +114,6 @@ class ComputeEnvelopeForm extends React.Component {
 
     return (
       <div>
-        <ToastContainer style={{ width: "600px" }} />
         <form className={classes.root}>
           <TextField
             label="Sygil"
