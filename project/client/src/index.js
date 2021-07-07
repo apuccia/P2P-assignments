@@ -1,21 +1,36 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
+import React from "react";
+import ReactDOM from "react-dom";
 
 import { DrizzleProvider } from "@drizzle/react-plugin";
 import { Drizzle, generateStore, EventActions } from "@drizzle/store";
-import { TX_ERROR } from "@drizzle/store/src/transactions/constants"
+import { TX_ERROR } from "@drizzle/store/src/transactions/constants";
 
-import Typography from '@material-ui/core/Typography';
+import Typography from "@material-ui/core/Typography";
 
-import { toast } from 'react-toastify'
+import { toast } from "react-toastify";
 
-import './index.css';
-import App from './App';
-import reportWebVitals from './reportWebVitals';
+import "./index.css";
+import App from "./App";
+import reportWebVitals from "./reportWebVitals";
 import Mayor from "./contracts/Mayor.json";
 
+import cand1 from "./media/cand1.png";
+import cand2 from "./media/cand2.png";
 
-
+export const dappInfo = {
+  candidates: [
+    {
+      name: "Prova Pippo",
+      slogan: "Avanti savoia",
+      pic: cand1,
+    },
+    {
+      name: "Pluto Pippo",
+      slogan: "sdrogolo",
+      pic: cand2,
+    },
+  ],
+};
 
 // let drizzle know what contracts we want and how to access our test blockchain
 const drizzleOptions = {
@@ -27,13 +42,13 @@ const drizzleOptions = {
     },
   },
   events: {
-    Mayor: ["EnvelopeCast", "EnvelopeOpen"],
-  }
+    Mayor: ["EnvelopeCast", "EnvelopeOpen", "Approval"],
+  },
 };
 
-const contractEventNotifier = store => next => action => {
+const contractEventNotifier = (store) => (next) => (action) => {
   const success = String.fromCodePoint(0x2714);
-  const err = String.fromCodePoint(0x274C);
+  const err = String.fromCodePoint(0x274c);
 
   // manage events
   if (action.type === EventActions.EVENT_FIRED) {
@@ -43,44 +58,79 @@ const contractEventNotifier = store => next => action => {
 
     switch (contractEvent) {
       case "EnvelopeCast":
-        console.log("zasdf");
-        display = <div>({success} {contractEvent}) Envelope casted with success.<br /><b>Voter address</b>: {values._voter}</div>;
+        display = (
+          <p>
+            ({success} {contractEvent}) Envelope casted with success.
+            <br />
+            <b>Voter address</b>: {values._voter}
+          </p>
+        );
         break;
       case "EnvelopeOpen":
-        display = <div>({success} {contractEvent}) Envelope opened with success.<br />
-          <b>Voter address</b>: {values._voter}<br />
-          <b>Souls token added</b>: {values._soul}<br />
-          <b>Candidate address</b>: {values._sygil}</div>;
+        display = (
+          <p>
+            ({success} {contractEvent}) Envelope opened with success.
+            <br />
+            <b>Voter address</b>: {values._voter}
+            <br />
+            <b>Souls token added</b>: {values._soul}
+            <br />
+            <b>Candidate address</b>: {values._sygil}
+          </p>
+        );
+        break;
+      case "Approval":
+        display = (
+          <p>
+            ({success} {contractEvent}) Token transfer delegation with success.
+            <br />
+            <b>Owner address</b>: {values.owner}
+            <br />
+            <b>Spender address</b>: {values.spender}
+            <br />
+            <b>Souls</b>: {values.value}
+          </p>
+        );
         break;
       default:
         display = "";
     }
 
     console.log(action.event.returnValues);
-    toast.success(<Typography variant="subtitle1" color="textPrimary" component="p">{display}</Typography>, { position: toast.POSITION.TOP_RIGHT })
+    toast.success(
+      <Typography variant="subtitle1" color="textPrimary" component="div">
+        {display}
+      </Typography>,
+      { position: toast.POSITION.TOP_RIGHT }
+    );
   }
   // manage transaction errors (require and modifiers)
   else if (action.type === TX_ERROR) {
     // get the json string from the error string
-    var msg = action.error.message
-    msg = msg.substring(msg.indexOf('\'') + 1, msg.length - 1);
+    var msg = action.error.message;
+    msg = msg.substring(msg.indexOf("'") + 1, msg.length - 1);
 
     // parse the json string and get the reason msg (i.e. require/modifier message)
     const parsed = JSON.parse(msg);
-    const reason = parsed.value.data.data[Object.keys(parsed.value.data.data)[0]].reason;
+    const reason =
+      parsed.value.data.data[Object.keys(parsed.value.data.data)[0]].reason;
 
-    toast.error(<Typography variant="subtitle1" color="textPrimary" component="p">{err} {reason}</Typography>, { position: toast.POSITION.TOP_RIGHT })
+    toast.error(
+      <Typography variant="subtitle1" color="textPrimary" component="p">
+        {err} {reason}
+      </Typography>,
+      { position: toast.POSITION.TOP_RIGHT }
+    );
   }
-  return next(action)
-}
+  return next(action);
+};
 
-const appMiddlewares = [contractEventNotifier]
+const appMiddlewares = [contractEventNotifier];
 
 const store = generateStore({
   drizzleOptions,
   appMiddlewares,
-  disableReduxDevTools: false  // enable ReduxDevTools!
-})
+});
 
 // setup the drizzle store and drizzle
 const drizzle = new Drizzle(drizzleOptions, store);

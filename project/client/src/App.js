@@ -1,9 +1,9 @@
-import React from 'react'
+import React from "react";
 
 import { DrizzleContext } from "@drizzle/react-plugin";
-import LinearProgress from '@material-ui/core/LinearProgress';
+import LinearProgress from "@material-ui/core/LinearProgress";
 
-import './App.css';
+import "./App.css";
 import SimpleTabs from "./components/SimpleTabs";
 
 const App = (props) => {
@@ -12,19 +12,18 @@ const App = (props) => {
   return (
     <DrizzleContext.Provider drizzle={drizzle}>
       <DrizzleContext.Consumer>
-        {drizzleContext => {
+        {(drizzleContext) => {
           const { drizzle, drizzleState, initialized } = drizzleContext;
 
           if (!initialized) {
-            return <LinearProgress />
+            return <LinearProgress />;
           }
 
-          return (
-            <SimpleTabs drizzle={drizzle} drizzleState={drizzleState} />
-          )
+          return <SimpleTabs drizzle={drizzle} drizzleState={drizzleState} />;
         }}
       </DrizzleContext.Consumer>
-    </DrizzleContext.Provider>);
-}
+    </DrizzleContext.Provider>
+  );
+};
 
 export default App;
