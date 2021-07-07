@@ -25,7 +25,7 @@ class ReadCandidates extends React.Component {
 
     // if it exists, then we display its value
     return (
-      <Grid container spacing={10}>
+      <Grid container spacing={10} justify="center">
         <Grid item md={3}>
           <Candidate
             name={dappInfo.candidates[0].name}
