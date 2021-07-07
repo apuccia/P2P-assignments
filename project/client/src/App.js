@@ -19,7 +19,11 @@ const App = (props) => {
             return <LinearProgress />;
           }
 
-          return <SimpleTabs drizzle={drizzle} drizzleState={drizzleState} />;
+          return (
+            <div>
+              <SimpleTabs drizzle={drizzle} drizzleState={drizzleState} />
+            </div>
+          );
         }}
       </DrizzleContext.Consumer>
     </DrizzleContext.Provider>

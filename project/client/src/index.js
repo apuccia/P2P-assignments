@@ -1,5 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom";
+//import { Container } from "react";
 
 import { DrizzleProvider } from "@drizzle/react-plugin";
 import { Drizzle, generateStore, EventActions } from "@drizzle/store";
@@ -7,12 +8,14 @@ import { TX_ERROR } from "@drizzle/store/src/transactions/constants";
 
 import Typography from "@material-ui/core/Typography";
 
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 import "./index.css";
 import App from "./App";
 import reportWebVitals from "./reportWebVitals";
 import Mayor from "./contracts/Mayor.json";
+import SOUToken from "./contracts/SOUToken.json";
 
 import cand1 from "./media/cand1.png";
 import cand2 from "./media/cand2.png";
@@ -34,7 +37,7 @@ export const dappInfo = {
 
 // let drizzle know what contracts we want and how to access our test blockchain
 const drizzleOptions = {
-  contracts: [Mayor],
+  contracts: [Mayor, SOUToken],
   web3: {
     fallback: {
       type: "ws",
@@ -42,10 +45,12 @@ const drizzleOptions = {
     },
   },
   events: {
-    Mayor: ["EnvelopeCast", "EnvelopeOpen", "Approval"],
+    Mayor: ["EnvelopeCast", "EnvelopeOpen"],
+    SOUToken: ["Approval"],
   },
 };
 
+const Container = (props) => <div>{props.children}</div>;
 const contractEventNotifier = (store) => (next) => (action) => {
   const success = String.fromCodePoint(0x2714);
   const err = String.fromCodePoint(0x274c);
@@ -79,6 +84,9 @@ const contractEventNotifier = (store) => (next) => (action) => {
           </p>
         );
         break;
+      // https://github.com/OpenZeppelin/openzeppelin-contracts/issues/707
+      // this event is produced also for transfer, transferFrom and _burn
+      // OZ doc is reporting only for approve
       case "Approval":
         display = (
           <p>
@@ -96,11 +104,12 @@ const contractEventNotifier = (store) => (next) => (action) => {
         display = "";
     }
 
-    console.log(action.event.returnValues);
     toast.success(
-      <Typography variant="subtitle1" color="textPrimary" component="div">
-        {display}
-      </Typography>,
+      <Container>
+        <Typography variant="subtitle1" color="textPrimary" component="div">
+          {display}
+        </Typography>
+      </Container>,
       { position: toast.POSITION.TOP_RIGHT }
     );
   }
@@ -116,9 +125,11 @@ const contractEventNotifier = (store) => (next) => (action) => {
       parsed.value.data.data[Object.keys(parsed.value.data.data)[0]].reason;
 
     toast.error(
-      <Typography variant="subtitle1" color="textPrimary" component="p">
-        {err} {reason}
-      </Typography>,
+      <Container>
+        <Typography variant="subtitle1" color="textPrimary" component="p">
+          {err} {reason}
+        </Typography>
+      </Container>,
       { position: toast.POSITION.TOP_RIGHT }
     );
   }
@@ -130,6 +141,7 @@ const appMiddlewares = [contractEventNotifier];
 const store = generateStore({
   drizzleOptions,
   appMiddlewares,
+  disableReduxDevTools: true, // enable ReduxDevTools!
 });
 
 // setup the drizzle store and drizzle
@@ -137,7 +149,10 @@ const drizzle = new Drizzle(drizzleOptions, store);
 
 ReactDOM.render(
   <DrizzleProvider options={drizzleOptions}>
-    <App drizzle={drizzle} />
+    <div>
+      <ToastContainer style={{ width: "600px" }} />
+      <App drizzle={drizzle} />
+    </div>
   </DrizzleProvider>,
   document.getElementById("root")
 );
