@@ -1,13 +1,18 @@
 const Mayor = artifacts.require("Mayor");
+const Soul = artifacts.require("Soul");
 
 module.exports = async function (deployer, network, accounts) {
-  await deployer.deploy(Mayor, accounts.slice(0, 2), accounts[9], 9);
+  const candidates = accounts.slice(0, 2);
+  const escrow = accounts[9];
+  const quorum = 1;
+
+  await deployer.deploy(Mayor, candidates, escrow, quorum);
 
   const mayorIstance = await Mayor.deployed();
-  const soulAddress = await mayorIstance.token();
 
-  // print contract addresses 
-  // soul contract address is needed to import the token in metamask
-  console.log("Mayor contract address: " + mayorIstance);
-  console.log("Soul contract address: " + soulAddress);
+  // print contract address and other infos
+  console.log("Mayor contract address: " + mayorIstance.address);
+  console.log("The candidates are " + candidates);
+  console.log("Escrow account: " + escrow);
+  console.log("Quorum: " + quorum);
 };
