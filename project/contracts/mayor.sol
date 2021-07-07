@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 
-pragma solidity 0.8.1;
+pragma solidity ^0.8.1;
 
-import "./soul.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract Mayor {
+contract Mayor is ERC20 {
     // Structs, events, and modifiers
 
     // Store refund data
@@ -64,10 +64,6 @@ contract Mayor {
         _;
     }
 
-    // State attributes
-
-    Soul public token;
-
     // Initialization variables
     mapping(address => AccumulatedVote) public candidates;
     address payable[] public candidatesAddresses;
@@ -93,7 +89,7 @@ contract Mayor {
         address[] memory _candidates,
         address payable _escrow,
         uint32 _quorum
-    ) {
+    ) ERC20("Soul", "SOU") {
         for (uint32 i = 0; i < _candidates.length; i++) {
             candidates[_candidates[i]] = AccumulatedVote(true, 0, 0);
             candidatesAddresses.push(payable(_candidates[i]));
@@ -104,8 +100,6 @@ contract Mayor {
             envelopes_casted: 0,
             envelopes_opened: 0
         });
-
-        token = new Soul(address(this), _quorum);
     }
 
     function get_candidates() public view returns (address payable[] memory) {
@@ -118,7 +112,7 @@ contract Mayor {
         if (envelopes[msg.sender] == 0x0) {
             // => NEW, update on 17/05/2021
             voting_condition.envelopes_casted++;
-            token.transfer(msg.sender, 100);
+            _mint(msg.sender, 100);
         }
 
         envelopes[msg.sender] = _envelope;
@@ -157,7 +151,8 @@ contract Mayor {
         voters.push(msg.sender);
         candidates[_symbol].souls += _souls;
         candidates[_symbol].votes++;
-        token.transferFrom(msg.sender, address(this), _souls);
+
+        this.transferFrom(msg.sender, address(this), _souls);
 
         souls[msg.sender] = Refund({soul: _souls, symbol: _symbol});
 
@@ -204,16 +199,16 @@ contract Mayor {
                 souls[voters[i]].soul = 0;
 
                 if (souls[voters[i]].symbol != _mayor) {
-                    token.transfer(voters[i], _val);
+                    transfer(voters[i], _val);
                 }
             }
 
             protocolEnded = true;
-            token.transfer(_mayor, _soulsToMayor);
+            transfer(_mayor, _soulsToMayor);
             emit NewMayor(_mayor);
         } else {
             protocolEnded = true;
-            token.transfer(escrow, _soulsToEscrow);
+            transfer(escrow, _soulsToEscrow);
             emit Tie(escrow);
         }
         // emit the NewMayor() event if the candidate is confirmed as mayor
