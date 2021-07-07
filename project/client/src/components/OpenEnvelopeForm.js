@@ -32,11 +32,16 @@ class OpenEnvelopeForm extends React.Component {
         this.callOpenEnvelope(this.state.sygil, this.state.symbol, this.state.soul);
     }
 
-    callOpenEnvelope = (sygil, symbol, soul) => {
+    callOpenEnvelope = async () => {
         const { drizzle, drizzleState } = this.props;
         const contract = drizzle.contracts.Mayor;
 
-        const stackId = contract.methods["open_envelope"].cacheSend(sygil, symbol, soul, { from: drizzleState.accounts[0] });
+        console.log(contract.address);
+        await contract.methods.approve(contract.address, this.state.soul).send({ from: drizzleState.accounts[0] });
+        console.log(drizzleState.accounts[0]);
+        console.log(this.state.soul);
+        const stackId = contract.methods["open_envelope"].cacheSend(this.state.sygil, this.state.symbol, this.state.soul, { from: drizzleState.accounts[0] });
+        console.log(drizzleState.accounts[0]);
 
         this.setState({ stackId });
     };
@@ -69,7 +74,7 @@ class OpenEnvelopeForm extends React.Component {
 
         return (
             <div>
-                <ToastContainer />
+                <ToastContainer style={{ width: "600px" }} />
                 <form className={classes.root}>
                     <TextField
                         label="Sygil"
