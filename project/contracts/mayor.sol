@@ -199,16 +199,16 @@ contract Mayor is ERC20 {
                 souls[voters[i]].soul = 0;
 
                 if (souls[voters[i]].symbol != _mayor) {
-                    transfer(voters[i], _val);
+                    this.transfer(voters[i], _val);
                 }
             }
 
             protocolEnded = true;
-            transfer(_mayor, _soulsToMayor);
+            this.transfer(_mayor, _soulsToMayor);
             emit NewMayor(_mayor);
         } else {
             protocolEnded = true;
-            transfer(escrow, _soulsToEscrow);
+            this.transfer(escrow, _soulsToEscrow);
             emit Tie(escrow);
         }
         // emit the NewMayor() event if the candidate is confirmed as mayor
