@@ -126,7 +126,6 @@ class ComputeEnvelopeForm extends React.Component {
               })
             }
           />
-          {/* TODO: change to select */}
           <TextField
             label="Symbol"
             variant="filled"
@@ -149,7 +148,6 @@ class ComputeEnvelopeForm extends React.Component {
             }
           />
           <div>
-            <Button variant="contained">Cancel</Button>
             <Button
               type="button"
               variant="contained"

@@ -34,11 +34,11 @@ class OpenEnvelopeForm extends React.Component {
     const mayorContract = drizzle.contracts.Mayor;
     const soulContract = drizzle.contracts.SOUToken;
 
-    soulContract.methods["approve"].cacheSend(
-      mayorContract.address,
-      this.state.soul,
-      { from: drizzleState.accounts[0] }
-    );
+    /* global BigInt */
+    const soul = BigInt(this.state.soul * 10 ** 18);
+    soulContract.methods["approve"].cacheSend(mayorContract.address, soul, {
+      from: drizzleState.accounts[0],
+    });
 
     const stackId = mayorContract.methods["open_envelope"].cacheSend(
       this.state.sygil,
@@ -93,7 +93,6 @@ class OpenEnvelopeForm extends React.Component {
               })
             }
           />
-          {/* TODO: change to select */}
           <TextField
             label="Symbol"
             variant="filled"
@@ -116,7 +115,6 @@ class OpenEnvelopeForm extends React.Component {
             }
           />
           <div>
-            <Button variant="contained">Cancel</Button>
             <Button
               type="button"
               variant="contained"
