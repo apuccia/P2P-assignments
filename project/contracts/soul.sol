@@ -12,7 +12,8 @@ contract SOUToken is ERC20 {
     function mint(address _target) public {
         if (!casted[_target]) {
             casted[_target] = true;
-            _mint(_target, 100);
+            // fixed, 18 decimals
+            _mint(_target, 100 * (10**uint256(decimals())));
         }
     }
 }

@@ -75,7 +75,7 @@ contract Mayor {
     // Voting phase variables
     mapping(address => bytes32) envelopes;
 
-    Conditions voting_condition;
+    Conditions public voting_condition;
 
     // Refund phase variables
     mapping(address => Refund) souls;
@@ -157,7 +157,7 @@ contract Mayor {
         candidates[_symbol].souls += _souls;
         candidates[_symbol].votes++;
 
-        token.transferFrom(msg.sender, address(this), _souls);
+        token.transferFrom(msg.sender, address(this), _souls * 10**18);
 
         souls[msg.sender] = Refund({soul: _souls, symbol: _symbol});
 
@@ -204,16 +204,16 @@ contract Mayor {
                 souls[voters[i]].soul = 0;
 
                 if (souls[voters[i]].symbol != _mayor) {
-                    token.transfer(voters[i], _val);
+                    token.transfer(voters[i], _val * 10**18);
                 }
             }
 
             protocolEnded = true;
-            token.transfer(_mayor, _soulsToMayor);
+            token.transfer(_mayor, _soulsToMayor * 10**18);
             emit NewMayor(_mayor);
         } else {
             protocolEnded = true;
-            token.transfer(escrow, _soulsToEscrow);
+            token.transfer(escrow, _soulsToEscrow * 10**18);
             emit Tie(escrow);
         }
         // emit the NewMayor() event if the candidate is confirmed as mayor
