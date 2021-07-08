@@ -5,24 +5,12 @@ import Candidate from "./Candidate";
 import { dappInfo } from "../index";
 
 class ReadCandidates extends React.Component {
-  state = { dataKey: null };
-
-  componentDidMount() {
-    const { drizzle } = this.props;
-    const contract = drizzle.contracts.Mayor;
-
-    const candidates = contract.methods["get_candidates"].cacheCall();
-
-    this.setState({ candidates });
-  }
-
   render() {
     // get the contract state from drizzleState
     const { Mayor } = this.props.drizzleState.contracts;
 
-    // using the saved `dataKey`, get the variable we're interested in
-    const candidates = Mayor.get_candidates[this.state.candidates];
-
+    const candidates = Mayor.get_candidates[this.props.candidates];
+    console.log(candidates);
     // if it exists, then we display its value
     return (
       <Grid container spacing={10} justify="center">
