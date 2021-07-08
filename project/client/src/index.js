@@ -45,103 +45,112 @@ const drizzleOptions = {
     },
   },
   events: {
-    Mayor: ["EnvelopeCast", "EnvelopeOpen"],
-    SOUToken: ["Approval"],
+    Mayor: ["EnvelopeCast", "EnvelopeOpen", "NewMayor", "Tie"],
   },
 };
 
 const Container = (props) => <div>{props.children}</div>;
-const contractEventNotifier = (store) => (next) => (action) => {
-  const success = String.fromCodePoint(0x2714);
-  const err = String.fromCodePoint(0x274c);
+const contractEventNotifier =
+  (lastSeenEventId) => (store) => (next) => (action) => {
+    const success = String.fromCodePoint(0x2714);
+    const err = String.fromCodePoint(0x274c);
 
-  // manage events
-  if (action.type === EventActions.EVENT_FIRED) {
-    const contractEvent = action.event.event;
-    const values = action.event.returnValues;
-    var display;
+    // manage events
+    if (action.type === EventActions.EVENT_FIRED) {
+      // this check is needed because metamask sends multiple events
+      // https://github.com/trufflesuite/drizzle/issues/7
+      // https://github.com/MetaMask/metamask-extension/issues/6668
+      if (action.event.id !== lastSeenEventId) {
+        lastSeenEventId = action.event.id;
+        const contractEvent = action.event.event;
+        const values = action.event.returnValues;
+        var display;
 
-    switch (contractEvent) {
-      case "EnvelopeCast":
-        display = (
-          <p>
-            ({success} {contractEvent}) Envelope casted with success.
-            <br />
-            <b>Voter address</b>: {values._voter}
-          </p>
+        switch (contractEvent) {
+          case "EnvelopeCast":
+            display = (
+              <p>
+                ({success} {contractEvent}) Envelope casted with success.
+                <br />
+                <b>Voter address</b>: {values._voter}
+              </p>
+            );
+            break;
+          case "EnvelopeOpen":
+            display = (
+              <p>
+                ({success} {contractEvent}) Envelope opened with success.
+                <br />
+                <b>Voter address</b>: {values._voter}
+                <br />
+                <b>Souls token added</b>: {values._soul}
+                <br />
+                <b>Candidate address</b>: {values._symbol}
+              </p>
+            );
+            break;
+          case "NewMayor":
+            display = (
+              <p>
+                ({success} {contractEvent}) Mayor declared.
+                <br />
+                <b>Candidate address</b>: {values._candidate}
+              </p>
+            );
+            break;
+          case "Tie":
+            display = (
+              <p>
+                ({success} {contractEvent}) There is a tie!.
+                <br />
+                <b>Escrow address</b>: {values._escrow}
+              </p>
+            );
+            break;
+          default:
+            display = "";
+        }
+
+        toast.success(
+          <Container>
+            <Typography variant="subtitle1" color="textPrimary" component="div">
+              {display}
+            </Typography>
+          </Container>,
+          { position: toast.POSITION.TOP_RIGHT }
         );
-        break;
-      case "EnvelopeOpen":
-        display = (
-          <p>
-            ({success} {contractEvent}) Envelope opened with success.
-            <br />
-            <b>Voter address</b>: {values._voter}
-            <br />
-            <b>Souls token added</b>: {values._soul}
-            <br />
-            <b>Candidate address</b>: {values._sygil}
-          </p>
-        );
-        break;
-      // https://github.com/OpenZeppelin/openzeppelin-contracts/issues/707
-      // this event is produced also for transfer, transferFrom and _burn
-      // OZ doc is reporting only for approve
-      case "Approval":
-        display = (
-          <p>
-            ({success} {contractEvent}) Token transfer delegation with success.
-            <br />
-            <b>Owner address</b>: {values.owner}
-            <br />
-            <b>Spender address</b>: {values.spender}
-            <br />
-            <b>Souls</b>: {values.value}
-          </p>
-        );
-        break;
-      default:
-        display = "";
+      }
+    }
+    // manage transaction errors (require and modifiers)
+    else if (action.type === TX_ERROR) {
+      // get the json string from the error string
+      var msg = action.error.message;
+      msg = msg.substring(msg.indexOf("'") + 1, msg.length - 1);
+
+      // parse the json string and get the reason msg (i.e. require/modifier message)
+      const parsed = JSON.parse(msg);
+      const reason =
+        parsed.value.data.data[Object.keys(parsed.value.data.data)[0]].reason;
+
+      toast.error(
+        <Container>
+          <Typography variant="subtitle1" color="textPrimary" component="p">
+            {err} {reason}
+          </Typography>
+        </Container>,
+        { position: toast.POSITION.TOP_RIGHT }
+      );
     }
 
-    toast.success(
-      <Container>
-        <Typography variant="subtitle1" color="textPrimary" component="div">
-          {display}
-        </Typography>
-      </Container>,
-      { position: toast.POSITION.TOP_RIGHT }
-    );
-  }
-  // manage transaction errors (require and modifiers)
-  else if (action.type === TX_ERROR) {
-    // get the json string from the error string
-    var msg = action.error.message;
-    msg = msg.substring(msg.indexOf("'") + 1, msg.length - 1);
+    return next(action);
+  };
 
-    // parse the json string and get the reason msg (i.e. require/modifier message)
-    const parsed = JSON.parse(msg);
-    const reason =
-      parsed.value.data.data[Object.keys(parsed.value.data.data)[0]].reason;
-
-    toast.error(
-      <Container>
-        <Typography variant="subtitle1" color="textPrimary" component="p">
-          {err} {reason}
-        </Typography>
-      </Container>,
-      { position: toast.POSITION.TOP_RIGHT }
-    );
-  }
-  return next(action);
-};
-
-const appMiddlewares = [contractEventNotifier];
+const appMiddlewares = [contractEventNotifier("")];
 
 const store = generateStore({
   drizzleOptions,
   appMiddlewares,
-  disableReduxDevTools: true, // enable ReduxDevTools!
+  disableReduxDevTools: false, // enable ReduxDevTools!
 });
 
 // setup the drizzle store and drizzle
