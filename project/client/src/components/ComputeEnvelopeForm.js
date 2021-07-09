@@ -41,10 +41,13 @@ class ComputeEnvelopeForm extends React.Component {
     const { drizzle, drizzleState } = this.props;
     const contract = drizzle.contracts.Mayor;
 
+    /* global BigInt */
+    const convertedSoul = BigInt(soul * 10 ** 18);
+    console.log(convertedSoul);
     const dataKey = contract.methods["compute_envelope"].cacheCall(
       sygil,
       symbol,
-      soul,
+      convertedSoul.toString(),
       { from: drizzleState.accounts[0] }
     );
     this.setState({ dataKey });
@@ -104,7 +107,7 @@ class ComputeEnvelopeForm extends React.Component {
 
     return (
       <Typography variant="h6" color="textPrimary" component="p">
-        Your envelope is {envelope && envelope.value}
+        Your envelope is: {envelope && envelope.value}
       </Typography>
     );
   };
