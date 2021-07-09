@@ -91,7 +91,7 @@ class ShowResult extends React.Component {
     return (
       <div>
         <div>
-          <TableContainer className={classes.container} component={Paper} fixed>
+          <TableContainer className={classes.container} component={Paper}>
             <Table aria-label="simple table">
               <TableHead className={classes.head}>
                 <TableRow>
@@ -158,7 +158,7 @@ class ShowResult extends React.Component {
     return (
       <div>
         <div>
-          <TableContainer fixed className={classes.container} component={Paper}>
+          <TableContainer className={classes.container} component={Paper}>
             <Table aria-label="simple table">
               <TableHead className={classes.head}>
                 <TableRow>
