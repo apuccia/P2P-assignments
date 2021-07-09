@@ -70,18 +70,19 @@ function SimpleTabs(props) {
 
   const [computeEnvelope, setComputeEnvelope] = React.useState(false);
   const [openEnvelope, setOpenEnvelope] = React.useState(false);
-  const [candidates, setCandidates] = React.useState(null);
-  const [escrow, setEscrow] = React.useState(null);
+  const [dataKeyCandidates, setCandidates] = React.useState(null);
+  const [dataKeyEscrow, setEscrow] = React.useState(null);
 
   useEffect(() => {
     const mayorContract = props.drizzle.contracts.Mayor;
 
-    const candidates = mayorContract.methods["get_candidates"].cacheCall();
-    const escrow = mayorContract.methods["escrow"].cacheCall();
+    const dataKeyCandidates =
+      mayorContract.methods["get_candidates"].cacheCall();
+    const dataKeyEscrow = mayorContract.methods["escrow"].cacheCall();
 
-    setCandidates(candidates);
-    setEscrow(escrow);
-  }, [candidates, escrow, props.drizzle.contracts.Mayor]);
+    setCandidates(dataKeyCandidates);
+    setEscrow(dataKeyEscrow);
+  }, [dataKeyCandidates, dataKeyEscrow, props.drizzle.contracts.Mayor]);
 
   const handleChange = (event, newValue) => {
     setValue(newValue);
@@ -177,15 +178,15 @@ function SimpleTabs(props) {
         <ReadCandidates
           drizzle={props.drizzle}
           drizzleState={props.drizzleState}
-          candidates={candidates}
+          dataKeyCandidates={dataKeyCandidates}
         />
       </TabPanel>
       <TabPanel value={value} index={2}>
         <ShowResult
-          candidates={candidates}
+          dataKeyCandidates={dataKeyCandidates}
           drizzle={props.drizzle}
           drizzleState={props.drizzleState}
-          escrow={escrow}
+          dataKeyEscrow={dataKeyEscrow}
         />
       </TabPanel>
 

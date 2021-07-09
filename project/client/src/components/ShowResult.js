@@ -48,7 +48,7 @@ class ShowResult extends React.Component {
     // get the contract state from drizzleState
     const { Mayor } = this.props.drizzleState.contracts;
 
-    const candidates = Mayor.get_candidates[this.props.candidates];
+    const candidates = Mayor.get_candidates[this.props.dataKeyCandidates];
     const dataKeyVotes = [];
     candidates.value.forEach(function (item, index) {
       const dataKeyVote = contract.methods["candidates"].cacheCall(item);
@@ -86,7 +86,8 @@ class ShowResult extends React.Component {
       candidatesVotes.push(Mayor.candidates[item]);
     });
 
-    const candidatesAddresses = Mayor.get_candidates[this.props.candidates];
+    const candidatesAddresses =
+      Mayor.get_candidates[this.props.dataKeyCandidates];
     return (
       <div>
         <div>
@@ -152,7 +153,7 @@ class ShowResult extends React.Component {
     // using the saved `dataKey`, get the variable we're interested in
     const vot_cond = Mayor.voting_condition[this.state.dataKeyVotCond];
 
-    const escrow = Mayor.escrow[this.props.escrow];
+    const escrow = Mayor.escrow[this.props.dataKeyEscrow];
     // if it exists, then we display its value
     return (
       <div>
