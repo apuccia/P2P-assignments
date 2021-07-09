@@ -3,7 +3,7 @@ import React from "react";
 import Table from "@material-ui/core/Table";
 import TableBody from "@material-ui/core/TableBody";
 import TableCell from "@material-ui/core/TableCell";
-import Container from "@material-ui/core/Container";
+import TableContainer from "@material-ui/core/TableContainer";
 import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
 import Paper from "@material-ui/core/Paper";
@@ -15,8 +15,13 @@ import { withStyles } from "@material-ui/core/styles";
 import { dappInfo } from "../index";
 
 const styles = (theme) => ({
+  head: {
+    backgroundColor: "orange",
+  },
   container: {
     width: 50 + "%",
+    marginRight: "auto",
+    marginLeft: "auto",
   },
   cell: {
     width: 100,
@@ -24,7 +29,11 @@ const styles = (theme) => ({
 });
 
 class ShowResult extends React.Component {
-  state = { dataKeyVotCond: null, dataKeyVotes: [], dataKeyMayor: null };
+  state = {
+    dataKeyVotCond: null,
+    dataKeyVotes: [],
+    dataKeyResult: null,
+  };
 
   componentDidMount = () => {
     const { drizzle } = this.props;
@@ -32,6 +41,9 @@ class ShowResult extends React.Component {
 
     const dataKeyVotCond = contract.methods["voting_condition"].cacheCall();
     this.setState({ dataKeyVotCond });
+
+    const dataKeyResult = contract.methods["mayor_result"].cacheCall();
+    this.setState({ dataKeyResult });
 
     // get the contract state from drizzleState
     const { Mayor } = this.props.drizzleState.contracts;
@@ -50,31 +62,22 @@ class ShowResult extends React.Component {
     const { drizzle, drizzleState } = this.props;
     const contract = drizzle.contracts.Mayor;
 
-    const dataKeyMayor = contract.methods["mayor_or_sayonara"].cacheSend({
+    contract.methods["mayor_or_sayonara"].cacheSend({
       from: drizzleState.accounts[0],
     });
-    this.setState({ dataKeyMayor });
   };
 
   showResults = () => {
     const { Mayor } = this.props.drizzleState.contracts;
 
-    // get the transaction states from the drizzle state
-    const { transactions, transactionStack } = this.props.drizzleState;
     const { classes } = this.props;
 
-    // get the transaction hash using our saved `stackId`
-    var txHash = transactionStack[this.state.dataKeyMayor];
-
-    // if transaction hash does not exist, don't display anything
-    if (!txHash || transactions[txHash] == null) return null;
-
+    const result = Mayor.mayor_result[this.state.dataKeyResult];
     if (
-      transactions[txHash] != null &&
-      transactions[txHash].status === "error"
+      result == null ||
+      result.value.mayor_address ===
+        "0x0000000000000000000000000000000000000000"
     ) {
-      transactions[txHash] = null;
-
       return null;
     }
 
@@ -84,21 +87,20 @@ class ShowResult extends React.Component {
     });
 
     const candidatesAddresses = Mayor.get_candidates[this.props.candidates];
-    const mosEvent = Mayor.events[Mayor.events.length - 1];
     return (
       <div>
         <div>
-          <Container className={classes.container} component={Paper} fixed>
+          <TableContainer className={classes.container} component={Paper} fixed>
             <Table aria-label="simple table">
-              <TableHead>
+              <TableHead className={classes.head}>
                 <TableRow>
-                  <TableCell className={classes.cell} align="center">
+                  <TableCell align="center">
                     <b>Candidate Address</b>
                   </TableCell>
-                  <TableCell className={classes.cell} align="center">
+                  <TableCell align="center">
                     <b>Candidate name</b>
                   </TableCell>
-                  <TableCell className={classes.cell} align="center">
+                  <TableCell align="center">
                     <b>Votes received</b>
                   </TableCell>
                 </TableRow>
@@ -123,16 +125,17 @@ class ShowResult extends React.Component {
                   })}
               </TableBody>
             </Table>
-          </Container>
+          </TableContainer>
         </div>
         <div>
           <Box textAlign="center" m={5}>
             <Typography variant="h6" color="textPrimary" component="p">
-              {mosEvent.event === "NewMayor"
+              {console.log(result.value.result)}
+              {result.value.result === "NewMayor"
                 ? "We have a new mayor! His address is: " +
-                  mosEvent.returnValues._candidate
+                  result.value.mayor_address
                 : "There is a tie! All souls goes into escrow account: " +
-                  mosEvent.returnValues._escrow}
+                  result.value.mayor_address}
             </Typography>
           </Box>
         </div>
@@ -153,39 +156,41 @@ class ShowResult extends React.Component {
     // if it exists, then we display its value
     return (
       <div>
-        <Container fixed className={classes.container} component={Paper}>
-          <Table aria-label="simple table">
-            <TableHead>
-              <TableRow>
-                <TableCell className={classes.cell} align="center">
-                  <b>Quorum</b>
-                </TableCell>
-                <TableCell className={classes.cell} align="center">
-                  <b>Envelopes casted</b>
-                </TableCell>
-                <TableCell className={classes.cell} align="center">
-                  <b>Envelopes opened</b>
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              <TableRow>
-                <TableCell className={classes.cell} align="center">
-                  {vot_cond && vot_cond.value.quorum}
-                </TableCell>
-                <TableCell className={classes.cell} align="center">
-                  {vot_cond && vot_cond.value.envelopes_casted}
-                </TableCell>
-                <TableCell className={classes.cell} align="center">
-                  {vot_cond && vot_cond.value.envelopes_opened}
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </Container>
         <div>
+          <TableContainer fixed className={classes.container} component={Paper}>
+            <Table aria-label="simple table">
+              <TableHead className={classes.head}>
+                <TableRow>
+                  <TableCell className={classes.cell} align="center">
+                    <b>Quorum</b>
+                  </TableCell>
+                  <TableCell className={classes.cell} align="center">
+                    <b>Envelopes casted</b>
+                  </TableCell>
+                  <TableCell className={classes.cell} align="center">
+                    <b>Envelopes opened</b>
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                <TableRow>
+                  <TableCell className={classes.cell} align="center">
+                    {vot_cond && vot_cond.value.quorum}
+                  </TableCell>
+                  <TableCell className={classes.cell} align="center">
+                    {vot_cond && vot_cond.value.envelopes_casted}
+                  </TableCell>
+                  <TableCell className={classes.cell} align="center">
+                    {vot_cond && vot_cond.value.envelopes_opened}
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </div>
+        <div style={{ marginTop: "50px", marginBottom: "50px" }}>
           {escrow && escrow.value === this.props.drizzleState.accounts[0] ? (
-            <Box textAlign="center" m={2}>
+            <Box textAlign="center">
               <Button
                 type="button"
                 variant="contained"
@@ -201,7 +206,7 @@ class ShowResult extends React.Component {
           )}
         </div>
 
-        {this.state.dataKeyMayor != null ? this.showResults() : <div></div>}
+        {this.showResults()}
       </div>
     );
   }
