@@ -1,6 +1,5 @@
 import React from "react";
 import ReactDOM from "react-dom";
-//import { Container } from "react";
 
 import { DrizzleContext } from "@drizzle/react-plugin";
 import { Drizzle, generateStore, EventActions } from "@drizzle/store";
@@ -17,20 +16,26 @@ import reportWebVitals from "./reportWebVitals";
 import Mayor from "./contracts/Mayor.json";
 import SOUToken from "./contracts/SOUToken.json";
 
-import cand1 from "./media/cand1.png";
-import cand2 from "./media/cand2.png";
+import solaire from "./media/solaire.jpg";
+import drake from "./media/drake.png";
+import freeman from "./media/freeman.jpg";
 
 export const dappInfo = {
   candidates: [
     {
-      name: "Prova Pippo",
-      slogan: "Avanti savoia",
-      pic: cand1,
+      name: "Solaire of Astora",
+      slogan: "The sun is a wondrous body. Like a magnificent father!",
+      pic: solaire,
     },
     {
-      name: "Pluto Pippo",
-      slogan: "sdrogolo",
-      pic: cand2,
+      name: "Nathan Drake",
+      slogan: "Desperate times, right?",
+      pic: drake,
+    },
+    {
+      name: "Dr. Gordon Freeman",
+      slogan: "Yeah, I went to MIT. Got a degree in crowbaring.",
+      pic: freeman,
     },
   ],
 };
