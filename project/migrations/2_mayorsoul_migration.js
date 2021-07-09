@@ -2,9 +2,9 @@ const Mayor = artifacts.require("Mayor");
 const SOUToken = artifacts.require("SOUToken");
 
 module.exports = async function (deployer, network, accounts) {
-  const candidates = accounts.slice(0, 2);
+  const candidates = accounts.slice(0, 3);
   const escrow = accounts[9];
-  const quorum = 1;
+  const quorum = 4;
 
   await deployer.deploy(SOUToken, { from: escrow });
   const soulInstance = await SOUToken.deployed();
