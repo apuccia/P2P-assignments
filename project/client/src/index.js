@@ -2,7 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom";
 //import { Container } from "react";
 
-import { DrizzleProvider } from "@drizzle/react-plugin";
+import { DrizzleContext } from "@drizzle/react-plugin";
 import { Drizzle, generateStore, EventActions } from "@drizzle/store";
 import { TX_ERROR } from "@drizzle/store/src/transactions/constants";
 
@@ -47,6 +47,8 @@ const drizzleOptions = {
   events: {
     Mayor: ["EnvelopeCast", "EnvelopeOpen", "NewMayor", "Tie"],
   },
+  // https://spectrum.chat/trufflesuite/drizzle/polls-and-syncalways-in-drizzleoptions~4bc46b65-cbb4-48aa-a351-e480bdcb9ac0
+  syncAlways: true,
 };
 
 const Container = (props) => <div>{props.children}</div>;
@@ -83,7 +85,7 @@ const contractEventNotifier =
                 <br />
                 <b>Voter address</b>: {values._voter}
                 <br />
-                <b>Souls token added</b>: {values._soul}
+                <b>Souls token spent</b>: {values._soul / 10 ** 18}
                 <br />
                 <b>Candidate address</b>: {values._symbol}
               </p>
@@ -157,12 +159,12 @@ const store = generateStore({
 const drizzle = new Drizzle(drizzleOptions, store);
 
 ReactDOM.render(
-  <DrizzleProvider options={drizzleOptions}>
+  <DrizzleContext.Provider drizzle={drizzle} options={drizzleOptions}>
     <div>
       <ToastContainer style={{ width: "600px" }} />
-      <App drizzle={drizzle} />
+      <App />
     </div>
-  </DrizzleProvider>,
+  </DrizzleContext.Provider>,
   document.getElementById("root")
 );
 
