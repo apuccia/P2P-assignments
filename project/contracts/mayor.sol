@@ -21,9 +21,15 @@ contract Mayor {
     }
 
     struct AccumulatedVote {
-        bool isSet;
+        bool is_set;
         uint32 votes;
         uint256 souls;
+    }
+
+    // Used to retrieve info after declaring mayor/tie
+    struct Result {
+        address mayor_address;
+        string result;
     }
 
     event NewMayor(address _candidate);
@@ -82,6 +88,7 @@ contract Mayor {
     address[] voters;
 
     SOUToken token;
+    Result public mayor_result;
 
     /// @notice The constructor only initializes internal variables
     /// @param _candidates (address) The address of the mayor candidate
@@ -105,6 +112,7 @@ contract Mayor {
         });
 
         token = _token;
+        mayor_result = Result({mayor_address: address(0), result: ""});
     }
 
     function get_candidates() public view returns (address payable[] memory) {
@@ -145,7 +153,11 @@ contract Mayor {
 
         bytes32 _casted_envelope = envelopes[msg.sender];
 
-        bytes32 _sent_envelope = compute_envelope(_sigil, _symbol, _souls);
+        bytes32 _sent_envelope = compute_envelope(
+            _sigil,
+            _symbol,
+            _souls * 10**18
+        );
 
         require(
             _casted_envelope == _sent_envelope,
@@ -161,12 +173,12 @@ contract Mayor {
 
         souls[msg.sender] = Refund({soul: _souls, symbol: _symbol});
 
-        emit EnvelopeOpen(msg.sender, _souls, _symbol);
+        emit EnvelopeOpen(msg.sender, _souls * 10**18, _symbol);
 
         envelopes[msg.sender] = 0x0;
     }
 
-    /// @notice Either confirm or kick out the candidate. Refund the electors who voted for the losing outcome
+    /// @notice Either elect or declare a tie. Refund the electors who voted for the losing outcome
     function mayor_or_sayonara() public canCheckOutcome protocolDone {
         bool _winner = true;
         address payable _mayor = candidatesAddresses[0];
@@ -209,15 +221,19 @@ contract Mayor {
             }
 
             protocolEnded = true;
+            mayor_result.mayor_address = _mayor;
+            mayor_result.result = "NewMayor";
             token.transfer(_mayor, _soulsToMayor * 10**18);
             emit NewMayor(_mayor);
         } else {
             protocolEnded = true;
+            mayor_result.mayor_address = escrow;
+            mayor_result.result = "Tie";
             token.transfer(escrow, _soulsToEscrow * 10**18);
             emit Tie(escrow);
         }
         // emit the NewMayor() event if the candidate is confirmed as mayor
-        // emit the Sayonara() event if the candidate is NOT confirmed as mayor
+        // emit the Tie() event if two or more candidates have same number of votes
     }
 
     /// @notice Compute a voting envelope
@@ -230,7 +246,7 @@ contract Mayor {
         uint256 _soul
     ) public view returns (bytes32) {
         require(
-            candidates[_symbol].isSet,
+            candidates[_symbol].is_set,
             "The candidate specified does not exist"
         );
 
