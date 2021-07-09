@@ -19,6 +19,7 @@ import ComputeEnvelopeForm from "./ComputeEnvelopeForm";
 import OpenEnvelopeForm from "./OpenEnvelopeForm";
 import ReadCandidates from "./ReadCandidates";
 import ShowResult from "./ShowResult";
+import ShowBalance from "./ShowBalance";
 
 import soulPic from "../media/soul.png";
 
@@ -71,23 +72,16 @@ function SimpleTabs(props) {
   const [openEnvelope, setOpenEnvelope] = React.useState(false);
   const [candidates, setCandidates] = React.useState(null);
   const [escrow, setEscrow] = React.useState(null);
-  const [balance, setBalance] = React.useState(null);
 
   useEffect(() => {
-    const { drizzle } = props;
-    const mayorContract = drizzle.contracts.Mayor;
-    const tokenContract = drizzle.contracts.SOUToken;
+    const mayorContract = props.drizzle.contracts.Mayor;
 
     const candidates = mayorContract.methods["get_candidates"].cacheCall();
     const escrow = mayorContract.methods["escrow"].cacheCall();
-    const balance = tokenContract.methods["balanceOf"].cacheCall(
-      props.drizzleState.accounts[0]
-    );
 
     setCandidates(candidates);
     setEscrow(escrow);
-    setBalance(balance);
-  }, [props]);
+  }, [candidates, escrow, props.drizzle.contracts.Mayor]);
 
   const handleChange = (event, newValue) => {
     setValue(newValue);
@@ -117,19 +111,6 @@ function SimpleTabs(props) {
     setValue(false);
   };
 
-  const showBalance = () => {
-    const { SOUToken } = props.drizzleState.contracts;
-
-    if (balance == null) {
-      return null;
-    }
-
-    // using the saved `dataKey`, get the variable we're interested in
-    const balanceValue = SOUToken.balanceOf[balance];
-
-    return balanceValue && balanceValue.value / 10 ** 18;
-  };
-
   return (
     <div className={classes.root}>
       <AppBar position="static">
@@ -157,30 +138,34 @@ function SimpleTabs(props) {
                 Valadilène Voting System
               </Typography>
             </Grid>
-            <Grid item align="right">
-              <Typography
-                variant="h5"
-                color="inherit"
-                style={{ marginTop: "5px" }}
-              >
-                {balance ? showBalance() : ""}
-              </Typography>
-            </Grid>
-            <Grid item align="right">
-              <Avatar src={soulPic} />
-            </Grid>
           </Grid>
         </Toolbar>
 
-        <Tabs
-          value={value}
-          onChange={handleChange}
-          aria-label="simple tabs example"
-        >
-          <Tab label="Home" {...a11yProps(0)} />
-          <Tab label="The candidates" {...a11yProps(1)} />
-          <Tab label="See result" {...a11yProps(2)} />
-        </Tabs>
+        <Grid container>
+          <Grid item>
+            <Tabs
+              value={value}
+              onChange={handleChange}
+              aria-label="simple tabs example"
+            >
+              <Tab label="Home" {...a11yProps(0)} />
+              <Tab label="The candidates" {...a11yProps(1)} />
+              <Tab label="See result" {...a11yProps(2)} />
+            </Tabs>
+          </Grid>
+
+          <Grid container justify="flex-end" style={{ marginTop: "-50px" }}>
+            <Grid item>
+              <ShowBalance
+                drizzle={props.drizzle}
+                drizzleState={props.drizzleState}
+              ></ShowBalance>
+            </Grid>
+            <Grid item>
+              <Avatar src={soulPic} style={{ marginRight: "50px" }} />
+            </Grid>
+          </Grid>
+        </Grid>
       </AppBar>
 
       <TabPanel value={value} index={0}>
