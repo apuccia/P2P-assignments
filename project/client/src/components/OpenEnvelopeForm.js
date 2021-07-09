@@ -43,7 +43,7 @@ class OpenEnvelopeForm extends React.Component {
     const stackId = mayorContract.methods["open_envelope"].cacheSend(
       this.state.sygil,
       this.state.symbol,
-      this.state.soul,
+      soul,
       { from: drizzleState.accounts[0] }
     );
 

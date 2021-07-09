@@ -153,11 +153,7 @@ contract Mayor {
 
         bytes32 _casted_envelope = envelopes[msg.sender];
 
-        bytes32 _sent_envelope = compute_envelope(
-            _sigil,
-            _symbol,
-            _souls * 10**18
-        );
+        bytes32 _sent_envelope = compute_envelope(_sigil, _symbol, _souls);
 
         require(
             _casted_envelope == _sent_envelope,
@@ -169,11 +165,11 @@ contract Mayor {
         candidates[_symbol].souls += _souls;
         candidates[_symbol].votes++;
 
-        token.transferFrom(msg.sender, address(this), _souls * 10**18);
+        token.transferFrom(msg.sender, address(this), _souls);
 
         souls[msg.sender] = Refund({soul: _souls, symbol: _symbol});
 
-        emit EnvelopeOpen(msg.sender, _souls * 10**18, _symbol);
+        emit EnvelopeOpen(msg.sender, _souls, _symbol);
 
         envelopes[msg.sender] = 0x0;
     }
@@ -216,20 +212,20 @@ contract Mayor {
                 souls[voters[i]].soul = 0;
 
                 if (souls[voters[i]].symbol != _mayor) {
-                    token.transfer(voters[i], _val * 10**18);
+                    token.transfer(voters[i], _val);
                 }
             }
 
             protocolEnded = true;
             mayor_result.mayor_address = _mayor;
             mayor_result.result = "NewMayor";
-            token.transfer(_mayor, _soulsToMayor * 10**18);
+            token.transfer(_mayor, _soulsToMayor);
             emit NewMayor(_mayor);
         } else {
             protocolEnded = true;
             mayor_result.mayor_address = escrow;
             mayor_result.result = "Tie";
-            token.transfer(escrow, _soulsToEscrow * 10**18);
+            token.transfer(escrow, _soulsToEscrow);
             emit Tie(escrow);
         }
         // emit the NewMayor() event if the candidate is confirmed as mayor
