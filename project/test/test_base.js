@@ -35,6 +35,26 @@ contract("MayorTest", (accounts) => {
     });
   });
 
+  describe("Test get_candidates", function () {
+    it("Should return array of candidates", async function () {
+      const token = await SOUToken.new();
+      const mayor = await Mayor.new(accounts, accounts[1], 0, token.address);
+      console.log("Contract address is " + mayor.address);
+
+      sigil = Math.floor(Math.random() * 100);
+      candidates = await mayor.get_candidates();
+      console.log("The candidates are " + candidates);
+
+      for (var i = 0; i < accounts.length; i++) {
+        assert.equal(
+          candidates[i],
+          accounts[i],
+          "The candidate is " + candidates[i]
+        );
+      }
+    });
+  });
+
   describe("Test compute_envelope", function () {
     it("Should hash sigil, vote and soul", async function () {
       const token = await SOUToken.new();
@@ -103,7 +123,7 @@ contract("MayorTest", (accounts) => {
       });
 
       const balance = await token.balanceOf(accounts[2]);
-      assert.equal(balance, 100, "Token balance is " + balance);
+      assert.equal(balance, 100 * 10 ** 18, "Token balance is " + balance);
     });
 
     it("A voter should not receive more than 100 tokens by casting multiple envelopes", async function () {
@@ -117,9 +137,10 @@ contract("MayorTest", (accounts) => {
 
       await mayor.cast_envelope(envelope, { from: accounts[2] });
       await mayor.cast_envelope(envelope, { from: accounts[2] });
+      await token.mint(accounts[2], { from: accounts[2] });
 
       const balance = await token.balanceOf(accounts[2]);
-      assert.equal(balance, 100, "Token balance is " + balance);
+      assert.equal(balance, 100 * 10 ** 18, "Token balance is " + balance);
     });
   });
 
@@ -340,9 +361,6 @@ contract("MayorTest", (accounts) => {
       truffleAssert.eventEmitted(receipt, "NewMayor", (event) => {
         return event._candidate === accounts[2];
       });
-
-      mayorBalance = await token.balanceOf(mayor.address);
-      assert.equal(mayorBalance, 0, "Mayor balance is " + mayorBalance);
     });
 
     it("Should be tie and update escrow", async function () {
@@ -416,9 +434,6 @@ contract("MayorTest", (accounts) => {
       truffleAssert.eventEmitted(receipt, "Tie", (event) => {
         return event._escrow === accounts[1];
       });
-
-      const mayorBalance = await token.balanceOf(mayor.address);
-      assert.equal(mayorBalance, 0, "Mayor balance is " + mayorBalance);
     });
 
     it("Should not repeat the mayor_or_sayonara", async function () {
@@ -468,6 +483,122 @@ contract("MayorTest", (accounts) => {
       await mayor
         .mayor_or_sayonara({ from: accounts[0] })
         .should.be.rejectedWith(PROTODONE_ERROR_MSG);
+    });
+  });
+
+  describe("Test mayor_result", function () {
+    it("Should be empty befor mayor_or_sayonara", async function () {
+      const token = await SOUToken.new();
+      const mayor = await Mayor.new(accounts, accounts[1], 3, token.address);
+
+      console.log("Contract address is " + mayor.address);
+
+      const result = await mayor.mayor_result();
+
+      assert.equal(
+        result.mayor_address,
+        0x0,
+        "The address is " + result.mayor_address
+      );
+      assert.equal(result.result, "", "The result is " + result.result);
+    });
+
+    it("Should return result of the voting protocol in case of a winner", async function () {
+      const token = await SOUToken.new();
+      const mayor = await Mayor.new(accounts, accounts[1], 3, token.address);
+
+      console.log("Contract address is " + mayor.address);
+
+      const sigilVoter1 = Math.floor(Math.random() * 100);
+      const envelopeVoter1 = await mayor.compute_envelope(
+        sigilVoter1,
+        accounts[2],
+        100
+      );
+      await mayor.cast_envelope(envelopeVoter1, { from: accounts[2] });
+
+      const sigilVoter2 = Math.floor(Math.random() * 100);
+      const envelopeVoter2 = await mayor.compute_envelope(
+        sigilVoter2,
+        accounts[2],
+        100
+      );
+      await mayor.cast_envelope(envelopeVoter2, { from: accounts[3] });
+
+      const sigilLoser = Math.floor(Math.random() * 100);
+      const envelopeLoser = await mayor.compute_envelope(
+        sigilLoser,
+        accounts[3],
+        100
+      );
+      await mayor.cast_envelope(envelopeLoser, { from: accounts[4] });
+
+      await token.approve(mayor.address, 100, { from: accounts[2] });
+      await mayor.open_envelope(sigilVoter1, accounts[2], 100, {
+        from: accounts[2],
+      });
+      await token.approve(mayor.address, 100, { from: accounts[3] });
+      await mayor.open_envelope(sigilVoter2, accounts[2], 100, {
+        from: accounts[3],
+      });
+      await token.approve(mayor.address, 100, { from: accounts[4] });
+      await mayor.open_envelope(sigilLoser, accounts[3], 100, {
+        from: accounts[4],
+      });
+
+      await mayor.mayor_or_sayonara({ from: accounts[0] });
+
+      const result = await mayor.mayor_result();
+
+      assert.equal(
+        result.mayor_address,
+        accounts[2],
+        "The winner is " + result.mayor_address
+      );
+      assert.equal(result.result, "NewMayor", "The result is " + result.result);
+    });
+
+    it("Should return result of the voting protocol in case of a tie", async function () {
+      const token = await SOUToken.new();
+      const mayor = await Mayor.new(accounts, accounts[1], 2, token.address);
+
+      console.log("Contract address is " + mayor.address);
+
+      const sigilVoter1 = Math.floor(Math.random() * 100);
+      const envelopeVoter1 = await mayor.compute_envelope(
+        sigilVoter1,
+        accounts[2],
+        100
+      );
+      await mayor.cast_envelope(envelopeVoter1, { from: accounts[2] });
+
+      const sigilVoter2 = Math.floor(Math.random() * 100);
+      const envelopeVoter2 = await mayor.compute_envelope(
+        sigilVoter2,
+        accounts[3],
+        100
+      );
+      await mayor.cast_envelope(envelopeVoter2, { from: accounts[3] });
+
+      await token.approve(mayor.address, 100, { from: accounts[2] });
+      await mayor.open_envelope(sigilVoter1, accounts[2], 100, {
+        from: accounts[2],
+      });
+      await token.approve(mayor.address, 100, { from: accounts[3] });
+      await mayor.open_envelope(sigilVoter2, accounts[3], 100, {
+        from: accounts[3],
+      });
+
+      await mayor.mayor_or_sayonara({ from: accounts[0] });
+
+      const result = await mayor.mayor_result();
+
+      assert.equal(
+        result.mayor_address,
+        accounts[1],
+        "The escrow account is " + result.mayor_address
+      );
+      assert.equal(result.result, "Tie", "The result is " + result.result);
     });
   });
 });
