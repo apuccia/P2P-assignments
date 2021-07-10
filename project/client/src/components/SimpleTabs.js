@@ -16,6 +16,7 @@ import OpenEnvelopeForm from "./OpenEnvelopeForm";
 import ReadCandidates from "./ReadCandidates";
 import ShowResult from "./ShowResult";
 import ShowBalance from "./ShowBalance";
+import Home from "./Home";
 
 import soulPic from "../media/soul.png";
 
@@ -120,9 +121,7 @@ function SimpleTabs(props) {
       </AppBar>
 
       <TabPanel value={value} index={0}>
-        <Typography className={classes.title} variant="body1" noWrap>
-          Main description
-        </Typography>
+        <Home drizzle={props.drizzle} drizzleState={props.drizzleState}></Home>
       </TabPanel>
       <TabPanel value={value} index={1}>
         <ReadCandidates
