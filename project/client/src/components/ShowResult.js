@@ -131,7 +131,6 @@ class ShowResult extends React.Component {
         <div>
           <Box textAlign="center" m={5}>
             <Typography variant="h6" color="textPrimary" component="p">
-              {console.log(result.value.result)}
               {result.value.result === "NewMayor"
                 ? "We have a new mayor! His address is: " +
                   result.value.mayor_address
@@ -189,7 +188,7 @@ class ShowResult extends React.Component {
             </Table>
           </TableContainer>
         </div>
-        <div style={{ marginTop: "50px", marginBottom: "50px" }}>
+        <div style={{ marginTop: "25px", marginBottom: "25px" }}>
           {escrow && escrow.value === this.props.drizzleState.accounts[0] ? (
             <Box textAlign="center">
               <Button
@@ -197,6 +196,7 @@ class ShowResult extends React.Component {
                 variant="contained"
                 color="primary"
                 justify="center"
+                style={{ width: "200px" }}
                 onClick={this.mayorOrSayonara}
               >
                 Declare Mayor
