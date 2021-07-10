@@ -9,10 +9,6 @@ import Grid from "@material-ui/core/Grid";
 import Typography from "@material-ui/core/Typography";
 import Box from "@material-ui/core/Box";
 import Toolbar from "@material-ui/core/Toolbar";
-import IconButton from "@material-ui/core/IconButton";
-import MenuIcon from "@material-ui/icons/Menu";
-import Menu from "@material-ui/core/Menu";
-import MenuItem from "@material-ui/core/MenuItem";
 import Avatar from "@material-ui/core/Avatar";
 
 import ComputeEnvelopeForm from "./ComputeEnvelopeForm";
@@ -66,10 +62,7 @@ const useStyles = makeStyles((theme) => ({
 function SimpleTabs(props) {
   const classes = useStyles();
   const [value, setValue] = React.useState(0);
-  const [anchorEl, setAnchorEl] = React.useState(null);
 
-  const [computeEnvelope, setComputeEnvelope] = React.useState(false);
-  const [openEnvelope, setOpenEnvelope] = React.useState(false);
   const [dataKeyCandidates, setCandidates] = React.useState(null);
   const [dataKeyEscrow, setEscrow] = React.useState(null);
 
@@ -86,60 +79,15 @@ function SimpleTabs(props) {
 
   const handleChange = (event, newValue) => {
     setValue(newValue);
-    setComputeEnvelope(false);
-    setOpenEnvelope(false);
-  };
-
-  const handleClick = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleComputeEnvelope = () => {
-    setAnchorEl(null);
-    setComputeEnvelope(true);
-    setOpenEnvelope(false);
-    setValue(false);
-  };
-
-  const handleOpenEnvelope = () => {
-    setComputeEnvelope(false);
-    setOpenEnvelope(true);
-    setAnchorEl(null);
-    setValue(false);
   };
 
   return (
     <div className={classes.root}>
       <AppBar position="static">
         <Toolbar>
-          <Grid container spacing={3}>
-            <Grid item align="left">
-              <IconButton onClick={handleClick} edge="start" color="inherit">
-                <MenuIcon />
-              </IconButton>
-
-              <Menu
-                anchorEl={anchorEl}
-                keepMounted
-                open={Boolean(anchorEl)}
-                onClose={handleClose}
-              >
-                <MenuItem onClick={handleComputeEnvelope}>
-                  Compute Envelope
-                </MenuItem>
-                <MenuItem onClick={handleOpenEnvelope}>Open Envelope</MenuItem>
-              </Menu>
-            </Grid>
-            <Grid item xs align="center">
-              <Typography variant="h4" color="inherit">
-                Valadilène Voting System
-              </Typography>
-            </Grid>
-          </Grid>
+          <Typography variant="h4" color="inherit" align="center">
+            Valadilène Voting System
+          </Typography>
         </Toolbar>
 
         <Grid container>
@@ -151,6 +99,8 @@ function SimpleTabs(props) {
             >
               <Tab label="Home" {...a11yProps(0)} />
               <Tab label="The candidates" {...a11yProps(1)} />
+              <Tab label="Cast envelope" {...a11yProps(2)} />
+              <Tab label="Open envelope" {...a11yProps(2)} />
               <Tab label="See result" {...a11yProps(2)} />
             </Tabs>
           </Grid>
@@ -182,6 +132,21 @@ function SimpleTabs(props) {
         />
       </TabPanel>
       <TabPanel value={value} index={2}>
+        <ComputeEnvelopeForm
+          drizzle={props.drizzle}
+          drizzleState={props.drizzleState}
+          dataKeyCandidates={dataKeyCandidates}
+        />
+      </TabPanel>
+      <TabPanel value={value} index={3}>
+        <OpenEnvelopeForm
+          drizzle={props.drizzle}
+          drizzleState={props.drizzleState}
+          dataKeyCandidates={dataKeyCandidates}
+        />
+      </TabPanel>
+
+      <TabPanel value={value} index={4}>
         <ShowResult
           dataKeyCandidates={dataKeyCandidates}
           drizzle={props.drizzle}
@@ -189,23 +154,6 @@ function SimpleTabs(props) {
           dataKeyEscrow={dataKeyEscrow}
         />
       </TabPanel>
-
-      {computeEnvelope ? (
-        <ComputeEnvelopeForm
-          drizzle={props.drizzle}
-          drizzleState={props.drizzleState}
-        />
-      ) : (
-        <div></div>
-      )}
-      {openEnvelope ? (
-        <OpenEnvelopeForm
-          drizzle={props.drizzle}
-          drizzleState={props.drizzleState}
-        />
-      ) : (
-        <div></div>
-      )}
     </div>
   );
 }
