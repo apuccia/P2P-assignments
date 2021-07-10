@@ -6,11 +6,13 @@ import { Drizzle, generateStore, EventActions } from "@drizzle/store";
 import { TX_ERROR } from "@drizzle/store/src/transactions/constants";
 
 import Typography from "@material-ui/core/Typography";
-import DoneOutlineIcon from "@material-ui/icons/DoneOutline";
-import ErrorOutlinedIcon from "@material-ui/icons/ErrorOutlined";
+import CheckCircleOutlineOutlinedIcon from "@material-ui/icons/CheckCircleOutlineOutlined";
+import ErrorOutlineOutlinedIcon from "@material-ui/icons/ErrorOutlineOutlined";
 
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+
+import "typeface-roboto";
 
 import "./index.css";
 import App from "./App";
@@ -119,7 +121,7 @@ const contractEventNotifier =
 
         toast.success(
           <Container>
-            <DoneOutlineIcon />
+            <CheckCircleOutlineOutlinedIcon />
             <Typography variant="subtitle1" color="textPrimary" component="div">
               {display}
             </Typography>
@@ -141,7 +143,7 @@ const contractEventNotifier =
 
       toast.error(
         <Container>
-          <ErrorOutlinedIcon />
+          <ErrorOutlineOutlinedIcon />
           <Typography variant="subtitle1" color="textPrimary" component="p">
             {reason}
           </Typography>
