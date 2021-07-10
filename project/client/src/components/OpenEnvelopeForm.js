@@ -3,6 +3,7 @@ import TextField from "@material-ui/core/TextField";
 import Button from "@material-ui/core/Button";
 import { withStyles } from "@material-ui/core/styles";
 import Typography from "@material-ui/core/Typography";
+import MenuItem from "@material-ui/core/MenuItem";
 
 const styles = (theme) => ({
   root: {
@@ -10,7 +11,6 @@ const styles = (theme) => ({
     flexDirection: "column",
     justifyContent: "center",
     alignItems: "center",
-    padding: theme.spacing(2),
 
     "& .MuiTextField-root": {
       margin: theme.spacing(1),
@@ -18,12 +18,22 @@ const styles = (theme) => ({
     },
     "& .MuiButtonBase-root": {
       margin: theme.spacing(2),
+      width: "200px",
     },
   },
 });
 
 class OpenEnvelopeForm extends React.Component {
-  state = { stackId: null };
+  state = { stackId: null, isValid: true };
+
+  componentDidMount = () => {
+    // get the contract state from drizzleState
+    const { Mayor } = this.props.drizzleState.contracts;
+
+    const candidates = Mayor.get_candidates[this.props.dataKeyCandidates];
+    const symbol = candidates && candidates.value[0];
+    this.setState({ symbol });
+  };
 
   handleOpen = (e) => {
     this.callOpenEnvelope(this.state.sygil, this.state.symbol, this.state.soul);
@@ -33,21 +43,28 @@ class OpenEnvelopeForm extends React.Component {
     const { drizzle, drizzleState } = this.props;
     const mayorContract = drizzle.contracts.Mayor;
     const soulContract = drizzle.contracts.SOUToken;
+    if (
+      this.state.sygil != null &&
+      this.state.symbol != null &&
+      this.state.soul != null
+    ) {
+      /* global BigInt */
+      const soul = BigInt(this.state.soul * 10 ** 18);
+      soulContract.methods["approve"].cacheSend(mayorContract.address, soul, {
+        from: drizzleState.accounts[0],
+      });
 
-    /* global BigInt */
-    const soul = BigInt(this.state.soul * 10 ** 18);
-    soulContract.methods["approve"].cacheSend(mayorContract.address, soul, {
-      from: drizzleState.accounts[0],
-    });
+      const stackId = mayorContract.methods["open_envelope"].cacheSend(
+        this.state.sygil,
+        this.state.symbol,
+        soul,
+        { from: drizzleState.accounts[0] }
+      );
 
-    const stackId = mayorContract.methods["open_envelope"].cacheSend(
-      this.state.sygil,
-      this.state.symbol,
-      soul,
-      { from: drizzleState.accounts[0] }
-    );
-
-    this.setState({ stackId });
+      this.setState({ stackId });
+    } else {
+      this.setState({ isValid: false });
+    }
   };
 
   getResult = () => {
@@ -78,7 +95,10 @@ class OpenEnvelopeForm extends React.Component {
 
   render() {
     const { classes } = this.props;
+    // get the contract state from drizzleState
+    const { Mayor } = this.props.drizzleState.contracts;
 
+    const candidates = Mayor.get_candidates[this.props.dataKeyCandidates];
     return (
       <div>
         <form className={classes.root}>
@@ -86,6 +106,7 @@ class OpenEnvelopeForm extends React.Component {
             label="Sygil"
             variant="filled"
             type="integer"
+            error={!this.state.isValid}
             required
             onChange={(e) =>
               this.setState({
@@ -94,19 +115,31 @@ class OpenEnvelopeForm extends React.Component {
             }
           />
           <TextField
+            select
             label="Symbol"
-            variant="filled"
             required
+            variant="filled"
+            defaultValue={candidates && candidates.value[0]}
             onChange={(e) =>
               this.setState({
                 symbol: e.target.value,
               })
             }
-          />
+          >
+            {candidates &&
+              candidates.value.map(function (item, index) {
+                return (
+                  <MenuItem key={item} value={item}>
+                    {item}
+                  </MenuItem>
+                );
+              })}
+          </TextField>
           <TextField
-            label="Soul"
+            label="Souls"
             variant="filled"
             type="integer"
+            error={!this.state.isValid}
             required
             onChange={(e) =>
               this.setState({
