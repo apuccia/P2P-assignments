@@ -6,6 +6,8 @@ import { Drizzle, generateStore, EventActions } from "@drizzle/store";
 import { TX_ERROR } from "@drizzle/store/src/transactions/constants";
 
 import Typography from "@material-ui/core/Typography";
+import DoneOutlineIcon from "@material-ui/icons/DoneOutline";
+import ErrorOutlinedIcon from "@material-ui/icons/ErrorOutlined";
 
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -59,9 +61,6 @@ const drizzleOptions = {
 const Container = (props) => <div>{props.children}</div>;
 const contractEventNotifier =
   (lastSeenEventId) => (store) => (next) => (action) => {
-    const success = String.fromCodePoint(0x2714);
-    const err = String.fromCodePoint(0x274c);
-
     // manage events
     if (action.type === EventActions.EVENT_FIRED) {
       // this check is needed because metamask sends multiple events
@@ -77,7 +76,7 @@ const contractEventNotifier =
           case "EnvelopeCast":
             display = (
               <p>
-                ({success} {contractEvent}) Envelope casted with success.
+                ({contractEvent}) Envelope casted with success.
                 <br />
                 <b>Voter address</b>: {values._voter}
               </p>
@@ -86,7 +85,7 @@ const contractEventNotifier =
           case "EnvelopeOpen":
             display = (
               <p>
-                ({success} {contractEvent}) Envelope opened with success.
+                ({contractEvent}) Envelope opened with success.
                 <br />
                 <b>Voter address</b>: {values._voter}
                 <br />
@@ -99,7 +98,7 @@ const contractEventNotifier =
           case "NewMayor":
             display = (
               <p>
-                ({success} {contractEvent}) Mayor declared.
+                ({contractEvent}) Mayor declared.
                 <br />
                 <b>Candidate address</b>: {values._candidate}
               </p>
@@ -108,7 +107,7 @@ const contractEventNotifier =
           case "Tie":
             display = (
               <p>
-                ({success} {contractEvent}) There is a tie!.
+                ({contractEvent}) There is a tie!.
                 <br />
                 <b>Escrow address</b>: {values._escrow}
               </p>
@@ -120,6 +119,7 @@ const contractEventNotifier =
 
         toast.success(
           <Container>
+            <DoneOutlineIcon />
             <Typography variant="subtitle1" color="textPrimary" component="div">
               {display}
             </Typography>
@@ -141,8 +141,9 @@ const contractEventNotifier =
 
       toast.error(
         <Container>
+          <ErrorOutlinedIcon />
           <Typography variant="subtitle1" color="textPrimary" component="p">
-            {err} {reason}
+            {reason}
           </Typography>
         </Container>,
         { position: toast.POSITION.TOP_RIGHT }
