@@ -8,3 +8,6 @@ plots
 build
 node_modules
 *.txt
+
+coverage
+coverage.json
