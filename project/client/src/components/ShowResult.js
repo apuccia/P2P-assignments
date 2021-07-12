@@ -51,7 +51,7 @@ class ShowResult extends React.Component {
     const candidates = Mayor.get_candidates[this.props.dataKeyCandidates];
     const dataKeyVotes = [];
     candidates.value.forEach(function (item, index) {
-      const dataKeyVote = contract.methods["candidates"].cacheCall(item);
+      const dataKeyVote = contract.methods["candidates_info"].cacheCall(item);
       dataKeyVotes.push(dataKeyVote);
     });
 
@@ -83,7 +83,7 @@ class ShowResult extends React.Component {
 
     const candidatesVotes = [];
     this.state.dataKeyVotes.forEach(function (item, index) {
-      candidatesVotes.push(Mayor.candidates[item]);
+      candidatesVotes.push(Mayor.candidates_info[item]);
     });
 
     const candidatesAddresses =

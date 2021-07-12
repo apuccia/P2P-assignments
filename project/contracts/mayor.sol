@@ -71,7 +71,7 @@ contract Mayor {
     }
 
     // Initialization variables
-    mapping(address => AccumulatedVote) public candidates;
+    mapping(address => AccumulatedVote) public candidates_info;
     address payable[] public candidatesAddresses;
     address payable public escrow;
 
@@ -101,7 +101,7 @@ contract Mayor {
         SOUToken _token
     ) {
         for (uint32 i = 0; i < _candidates.length; i++) {
-            candidates[_candidates[i]] = AccumulatedVote(true, 0, 0);
+            candidates_info[_candidates[i]] = AccumulatedVote(true, 0, 0);
             candidatesAddresses.push(payable(_candidates[i]));
         }
         escrow = _escrow;
@@ -162,8 +162,8 @@ contract Mayor {
 
         voting_condition.envelopes_opened++;
         voters.push(msg.sender);
-        candidates[_symbol].souls += _souls;
-        candidates[_symbol].votes++;
+        candidates_info[_symbol].souls += _souls;
+        candidates_info[_symbol].votes++;
 
         token.transferFrom(msg.sender, address(this), _souls);
 
@@ -178,26 +178,26 @@ contract Mayor {
     function mayor_or_sayonara() public canCheckOutcome protocolDone {
         bool _winner = true;
         address payable _mayor = candidatesAddresses[0];
-        uint256 _soulsToMayor = candidates[_mayor].souls;
-        uint256 _soulsToEscrow = candidates[_mayor].souls;
-        candidates[_mayor].souls = 0;
+        uint256 _soulsToMayor = candidates_info[_mayor].souls;
+        uint256 _soulsToEscrow = candidates_info[_mayor].souls;
+        //candidates_info[_mayor].souls = 0;
 
         for (uint256 i = 1; i < candidatesAddresses.length; i++) {
-            AccumulatedVote memory _candidateResult = candidates[
+            AccumulatedVote memory _candidateResult = candidates_info[
                 candidatesAddresses[i]
             ];
 
             if (
-                _candidateResult.souls > candidates[_mayor].souls ||
-                ((_candidateResult.souls == candidates[_mayor].souls) &&
-                    (_candidateResult.votes > candidates[_mayor].votes))
+                _candidateResult.souls > candidates_info[_mayor].souls ||
+                ((_candidateResult.souls == candidates_info[_mayor].souls) &&
+                    (_candidateResult.votes > candidates_info[_mayor].votes))
             ) {
                 _soulsToMayor = _candidateResult.souls;
                 _mayor = candidatesAddresses[i];
                 _winner = true;
             } else if (
-                (_candidateResult.souls == candidates[_mayor].souls) &&
-                (_candidateResult.votes == candidates[_mayor].votes)
+                (_candidateResult.souls == candidates_info[_mayor].souls) &&
+                (_candidateResult.votes == candidates_info[_mayor].votes)
             ) {
                 _winner = false;
             }
@@ -242,7 +242,7 @@ contract Mayor {
         uint256 _soul
     ) public view returns (bytes32) {
         require(
-            candidates[_symbol].is_set,
+            candidates_info[_symbol].is_set,
             "The candidate specified does not exist"
         );
 

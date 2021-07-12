@@ -24,7 +24,7 @@ contract("MayorTest", (accounts) => {
       const mayor = await Mayor.new(accounts, accounts[1], 10, token.address);
       console.log("Contract address is " + mayor.address);
 
-      const candidate = await mayor.candidates(accounts[3]);
+      const candidate = await mayor.candidates_info(accounts[3]);
       assert(
         candidate.souls == 0 && candidate.votes == 0,
         "Votes: " + candidate.votes + " Souls: " + candidate.souls
@@ -223,7 +223,7 @@ contract("MayorTest", (accounts) => {
           event._symbol == accounts[2]
         );
       });
-      const accumulatedVote = await mayor.candidates(accounts[2]);
+      const accumulatedVote = await mayor.candidates_info(accounts[2]);
       assert.equal(
         accumulatedVote.souls,
         50,
@@ -321,7 +321,7 @@ contract("MayorTest", (accounts) => {
 
       var mayorBalance = await token.balanceOf(mayor.address);
       assert.equal(mayorBalance, 300);
-      const cr = await mayor.candidates(accounts[2]);
+      const cr = await mayor.candidates_info(accounts[2]);
       assert.equal(cr.votes, 2, "Must be equal");
       assert.equal(cr.souls, 200, "Must be equal");
 
