@@ -180,7 +180,6 @@ contract Mayor {
         address payable _mayor = candidatesAddresses[0];
         uint256 _soulsToMayor = candidates_info[_mayor].souls;
         uint256 _soulsToEscrow = candidates_info[_mayor].souls;
-        //candidates_info[_mayor].souls = 0;
 
         for (uint256 i = 1; i < candidatesAddresses.length; i++) {
             AccumulatedVote memory _candidateResult = candidates_info[
@@ -229,7 +228,7 @@ contract Mayor {
             emit Tie(escrow);
         }
         // emit the NewMayor() event if the candidate is confirmed as mayor
-        // emit the Tie() event if two or more candidates have same number of votes
+        // emit the Tie() event if two or more candidates have same number of votes and souls
     }
 
     /// @notice Compute a voting envelope
