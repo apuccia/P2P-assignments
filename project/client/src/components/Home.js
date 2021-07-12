@@ -89,10 +89,18 @@ class Home extends React.Component {
             align="center"
           >
             In the next tabs, you can see who are the candidates for this
-            election. If you want to vote for a particular candidate, switch to
-            the cast envelope tab, after casting an envelope you'll receive
-            <b>100 SOU</b>.
+            election. 
           </Typography>
+          <Typography
+            variant="body1"
+            color="textPrimary"
+            component="p"
+            align="center"
+          >
+          If you want to vote for a particular candidate, switch to
+            the cast envelope tab, after casting an envelope you'll receive
+            <b> 100 SOU</b>.
+            </Typography>
           <Typography
             variant="body1"
             color="textPrimary"
